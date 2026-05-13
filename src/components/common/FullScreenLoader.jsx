@@ -25,7 +25,7 @@ function FullScreenLoader({ isVisible }) {
             playsInline
             preload="auto"
             onLoadedData={(e) => e.currentTarget.play()}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-auto min-w-full object-contain sm:h-full sm:object-cover"
           />
 
           {/* 🌑 Dark Overlay */}

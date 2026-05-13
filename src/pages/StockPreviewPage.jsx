@@ -278,9 +278,9 @@ const StockPreviewPage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-[#0b0f1a]">
-        <div className="text-center space-y-2">
-          <div className="w-6 h-6 border border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs text-slate-500 font-mono">Loading {symbol}...</p>
+        <div className="text-center space-y-1.5 sm:space-y-2">
+          <div className="w-5 h-5 sm:w-6 sm:h-6 border border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-[10px] sm:text-xs text-slate-500 font-mono">Loading {symbol}...</p>
         </div>
       </div>
     );
@@ -288,100 +288,66 @@ const StockPreviewPage = () => {
 
  return (
   <div
-    className="flex flex-col min-h-0 bg-[#0b0f1a] text-slate-200 overflow-hidden"
-    style={{ height: "calc(100vh - 8rem)", fontFamily: "ui-monospace, monospace" }}
+    className="flex flex-col bg-[#0b0f1a] text-slate-200 overflow-x-hidden overflow-y-auto sm:overflow-hidden sm:min-h-0"
+    style={{ minHeight: "calc(100vh - 5.5rem)", fontFamily: "ui-monospace, monospace" }}
   >
 
     {/* ── TOP BAR ── */}
-    <div className="flex items-center justify-between px-5 py-1.5 border-b border-[#1e2a3a] bg-[#0f1623] flex-shrink-0">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between px-2.5 sm:px-5 py-1.5 border-b border-[#1e2a3a] bg-[#0f1623] flex-shrink-0 gap-1.5 sm:gap-0">
 
-{/* ── LEFT: NAME + META ── */}
-<div className="flex flex-col items-start gap-2.5 mt-3">
-  <button
-    onClick={handleBack}
-    className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold rounded-md border border-cyan-400/40 bg-cyan-500/15 text-cyan-200 shadow-[0_0_0_1px_rgba(34,211,238,0.15)] hover:bg-cyan-500/25 hover:text-cyan-100 hover:border-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-300/50 transition-all"
-  >
-    <span aria-hidden="true">←</span>
-    Back 
-  </button>
-<div className="flex flex-col">
+      {/* ── LEFT: NAME + META ── */}
+      <div className="flex flex-col items-start gap-1.5 sm:gap-2.5 mt-1.5 sm:mt-3">
+        <button
+          onClick={handleBack}
+          className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-0.5 sm:py-1 text-[9px] sm:text-[11px] font-semibold rounded-md border border-cyan-400/40 bg-cyan-500/15 text-cyan-200 hover:bg-cyan-500/25 transition-all"
+        >
+          <span aria-hidden="true">←</span>
+          Back
+        </button>
+        <div className="flex flex-col">
+          <p className="text-[12px] sm:text-[14px] font-semibold text-slate-100 leading-tight truncate max-w-[60vw] sm:max-w-none">
+            {stockDetails?.name || "—"}
+          </p>
+          <p className="text-[9px] sm:text-[11px] text-slate-400">{symbol}</p>
+          <p className="text-[8px] sm:text-[10px] text-slate-500 mt-[1px] sm:mt-[2px]">
+            {exchLabel} · {exchType === "C" ? "Cash" : "Derivatives"} · {exchType === "C" ? "Equity" : "Commodity"}
+          </p>
+        </div>
+      </div>
 
-  {/* Full Name */}
-  <p className="text-[14px] font-semibold text-slate-100 leading-tight">
-    {stockDetails?.name || "—"}
-  </p>
+      {/* ── RIGHT: PRICE + ACTIONS ── */}
+      <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-8">
+        <div className="text-left sm:text-right">
+          <p className="text-[16px] sm:text-[20px] font-semibold text-slate-100">
+            ₹ {formatNumber(normalized.ltp)}
+          </p>
+          <p className={`text-[10px] sm:text-[13px] font-medium ${normalized.change >= 0 ? "text-green-400" : "text-red-400"}`}>
+            {normalized.change >= 0 ? "+" : ""}{formatNumber(normalized.change.toFixed(2))} ({normalized.changePercent.toFixed(2)}%)
+          </p>
+        </div>
 
-  {/* Symbol */}
-  <p className="text-[11px] text-slate-400">
-    {symbol}
-  </p>
+        <div className="flex gap-1.5 sm:gap-3">
+          <button
+            className="px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[14px] rounded-md bg-green-500/10 text-green-400 border border-green-500/30 hover:bg-green-500/20 transition-all"
+            onClick={() => { setSelectedStock(stockDetails?.name); setTradeAction("BUY"); setIsModalOpen(true); }}
+          >Buy</button>
+          <button
+            className="px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[14px] rounded-md bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-all"
+            onClick={() => { setSelectedStock(stockDetails?.name); setTradeAction("SELL"); setIsModalOpen(true); }}
+          >Sell</button>
+        </div>
+      </div>
 
-  {/* Meta */}
-  <p className="text-[10px] text-slate-500 mt-[2px]">
-    {exchLabel} · {exchType === "C" ? "Cash" : "Derivatives"}· {exchType === "C" ? "Equity" : "Commodity"}
-  
-  </p>
-
-</div>
-</div>
-
-{/* ── RIGHT: PRICE + ACTIONS ── */}
-<div className="flex items-center gap-8">
-
-  {/* PRICE BLOCK */}
-  <div className="text-right">
-    <p className="text-[20px] font-semibold text-slate-100">
-      ₹ {formatNumber(normalized.ltp)}
-    </p>
-
-    <p
-      className={`text-[13px] font-medium ${
-        normalized.change >= 0 ? "text-green-400" : "text-red-400"
-      }`}
-    >
-      {normalized.change >= 0 ? "+" : ""}
-      {formatNumber(normalized.change.toFixed(2))} (
-      {normalized.changePercent.toFixed(2)}%)
-    </p>
-  </div>
-
-  {/* ACTIONS */}
-  <div className="flex gap-3">
-    <button className="px-4 py-1.5 text-[14px] rounded-md bg-green-500/10 text-green-400 border border-green-500/30 hover:bg-green-500/20 hover:border-green-400 transition-all"
-    onClick={() => {
-      // console.log("BUY", item)
-      setSelectedStock(stockDetails?.name);
-      setTradeAction("BUY");
-      setIsModalOpen(true);
-   } }
-    >
-      Buy
-    </button>
-
-    <button 
-      onClick={() => {
-        // console.log("BUY", item)
-        setSelectedStock(stockDetails?.name);
-        setTradeAction("SELL");
-        setIsModalOpen(true);
-     } }
-     className="px-4 py-1.5 text-[14px] rounded-md bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 hover:border-red-400 transition-all">
-      Sell
-    </button>
-  </div>
-
-</div>
-
-</div>
+    </div>
 
     {/* ── TOOLBAR ── */}
-    <div className="flex items-center justify-between px-4 py-1 border-b border-[#1e2a3a] bg-[#0f1623] flex-shrink-0">
-      <div className="flex gap-1">
+    <div className="flex items-center justify-between px-2 sm:px-4 py-1 border-b border-[#1e2a3a] bg-[#0f1623] flex-shrink-0 gap-1.5">
+      <div className="flex gap-0.5 sm:gap-1">
         {["1m", "5m", "15m"].map((tf) => (
           <button
             key={tf}
             onClick={() => setTimeframe(tf)}
-            className={`px-2.5 py-0.5 text-[11px] rounded-md border transition-colors ${
+            className={`px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[11px] rounded-md border transition-colors ${
               timeframe === tf
                 ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
                 : "bg-transparent text-slate-500 border-[#1e2a3a] hover:text-slate-300"
@@ -391,40 +357,39 @@ const StockPreviewPage = () => {
           </button>
         ))}
       </div>
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-1 sm:gap-2 items-center">
         {[["from", fromDate, setFromDate], ["to", toDate, setToDate]].map(([label, val, setter]) => (
           <input
             key={label}
             type="date"
             value={val}
             onChange={(e) => setter(e.target.value)}
-            className="bg-[#0b0f1a] border border-[#1e2a3a] text-slate-400 text-[11px] px-2 py-0.5 rounded-md outline-none focus:border-slate-500"
+            className="bg-[#0b0f1a] border border-[#1e2a3a] text-slate-400 text-[9px] sm:text-[11px] px-1 sm:px-2 py-0.5 rounded-md outline-none focus:border-slate-500 max-w-[110px] sm:max-w-none"
           />
         ))}
       </div>
     </div>
 
     {/* ── MAIN CONTENT ── */}
-    <div className="flex flex-1 min-h-0 overflow-hidden bg-[#0f1623]">
+    <div className="flex flex-col sm:flex-row sm:flex-1 sm:min-h-0 overflow-visible sm:overflow-hidden bg-[#0f1623]">
+
       {/* ── CHART COLUMN ── */}
-      <div 
-      style={{overflowY:"auto"}}
-      className="flex-1 flex flex-col min-h-0 border-r border-[#1e2a3a] overflow-hidden">
+      <div className="flex flex-col sm:flex-1 sm:min-h-0 sm:border-r border-[#1e2a3a] sm:overflow-y-auto">
 
         {/* Chart */}
-        <div className="relative min-h-[220px] basis-[62%] bg-[#0b0f1a]">
+        <div className="relative h-[250px] sm:h-auto sm:min-h-[220px] sm:basis-[62%] bg-[#0b0f1a] shrink-0">
           {noCandleData ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center space-y-1">
-              <p className="text-sm text-slate-500">No market data available</p>
-              <p className="text-xs text-slate-600">Try a different date or timeframe</p>
+              <p className="text-xs sm:text-sm text-slate-500">No market data available</p>
+              <p className="text-[10px] sm:text-xs text-slate-600">Try a different date or timeframe</p>
             </div>
           ) : (
             <div ref={chartRef} className="w-full h-full" />
           )}
         </div>
 
-        {/* ── AI STRIP ── */}
-        <div className="flex-1 min-h-[170px] border-t border-[#1e2a3a] bg-[#0f1623] px-4 py-3">
+        {/* ── AI STRIP (desktop only — below chart) ── */}
+        <div className="hidden sm:block flex-1 min-h-[170px] border-t border-[#1e2a3a] bg-[#0f1623] px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] text-slate-500 uppercase tracking-widest">AI Analysis</p>
             <span className="inline-flex items-center gap-1 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2 py-0.5 text-[9px] text-indigo-300">
@@ -439,101 +404,62 @@ const StockPreviewPage = () => {
                 { label: "Long term", val: aiData?.long_term, type: "signal" },
                 { label: "Confidence", val: aiData?.confidence, type: "conf" },
               ].map(({ label, val, type }) => (
-                <div
-                  key={label}
-                  className={`rounded-lg border px-3 py-2.5 ${
-                    type === "conf"
-                      ? "bg-yellow-500/8 border-yellow-500/25"
-                      : val === "BUY"
-                      ? "bg-emerald-500/10 border-emerald-500/30"
-                      : "bg-rose-500/10 border-rose-500/30"
-                  }`}
-                >
+                <div key={label} className={`rounded-lg border px-3 py-2.5 ${type === "conf" ? "bg-yellow-500/8 border-yellow-500/25" : val === "BUY" ? "bg-emerald-500/10 border-emerald-500/30" : "bg-rose-500/10 border-rose-500/30"}`}>
                   <p className="text-[10px] uppercase tracking-wide text-slate-500">{label}</p>
-                  {aiLoading ? (
-                    <div className="mt-2 h-3 w-14 bg-slate-700/80 rounded animate-pulse" />
-                  ) : (
-                    <p className={`mt-1.5 text-[14px] font-semibold ${type === "conf" ? "text-yellow-300" : val === "BUY" ? "text-emerald-300" : "text-rose-300"}`}>
-                      {val || "—"}
-                    </p>
+                  {aiLoading ? <div className="mt-2 h-3 w-14 bg-slate-700/80 rounded animate-pulse" /> : (
+                    <p className={`mt-1.5 text-[14px] font-semibold ${type === "conf" ? "text-yellow-300" : val === "BUY" ? "text-emerald-300" : "text-rose-300"}`}>{val || "—"}</p>
                   )}
                 </div>
               ))}
             </div>
-
             <div className="rounded-xl border border-[#1f2d44] bg-gradient-to-br from-[#121a2b] via-[#0f1623] to-[#0d1421] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
               <div className="h-full min-h-0 grid gap-3">
                 <div className="min-h-0 rounded-lg border border-[#22324a] bg-[#0e1625]/80 px-3 py-2.5">
                   <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Model Insight</p>
                   {aiLoading ? (
-                    <div className="space-y-1.5">
-                      <div className="h-2 bg-slate-700/80 rounded animate-pulse w-full" />
-                      <div className="h-2 bg-slate-700/80 rounded animate-pulse w-11/12" />
-                      <div className="h-2 bg-slate-700/80 rounded animate-pulse w-5/6" />
-                    </div>
+                    <div className="space-y-1.5"><div className="h-2 bg-slate-700/80 rounded animate-pulse w-full" /><div className="h-2 bg-slate-700/80 rounded animate-pulse w-11/12" /><div className="h-2 bg-slate-700/80 rounded animate-pulse w-5/6" /></div>
                   ) : (
-                    <p className="h-[calc(100%-1.15rem)] overflow-y-auto pr-1 text-[12px] leading-relaxed text-slate-200">
-                      {aiData?.reason || <span className="text-slate-600">No analysis available</span>}
-                    </p>
+                    <p className="h-[calc(100%-1.15rem)] overflow-y-auto pr-1 text-[12px] leading-relaxed text-slate-200">{aiData?.reason || <span className="text-slate-600">No analysis available</span>}</p>
                   )}
                 </div>
-
-                {/* <div className="grid grid-rows-2 gap-2 min-h-0">
-                  <div className="rounded-lg border border-[#22324a] bg-[#0d1522]/80 px-3 py-2">
-                    <p className="text-[9px] uppercase tracking-widest text-slate-500 mb-1">Bias</p>
-                    <p className={`text-[13px] font-semibold ${aiData?.short_term === "BUY" ? "text-emerald-300" : "text-rose-300"}`}>
-                      {aiLoading ? "..." : aiData?.short_term || "Neutral"}
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-1">Near-term stance</p>
-                  </div>
-                  <div className="rounded-lg border border-[#22324a] bg-[#0d1522]/80 px-3 py-2">
-                    <p className="text-[9px] uppercase tracking-widest text-slate-500 mb-1">Risk Level</p>
-                    <p className="text-[13px] font-semibold text-yellow-300">
-                      {aiLoading ? "..." : aiData?.confidence || "Moderate"}
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-1">Signal reliability</p>
-                  </div>
-                </div> */}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── RIGHT PANEL ── */}
+      {/* ── RIGHT PANEL (below chart on mobile, sidebar on desktop) ── */}
       <div
-        className="flex-shrink-0 flex flex-col min-h-0 overflow-y-auto bg-[#0f1623]"
-        style={{ width: "clamp(240px, 24vw, 420px)" }}
+        className="flex-shrink-0 flex flex-col min-h-0 overflow-y-auto bg-[#0f1623] w-full sm:w-[clamp(240px,24vw,420px)] border-t sm:border-t-0 border-[#1e2a3a]"
       >
 
-        {/* Position */}
         {qty > 0 && (
-          <div className="px-3 py-2 border-b border-[#1e2a3a]">
-            <p className="text-[9px] text-slate-600 uppercase tracking-widest mb-1.5">Your Position</p>
-            <div className="bg-[#0b0f1a] border border-[#1e2a3a] rounded-lg p-2.5">
-              <div className="flex justify-between mb-2">
+          <div className="px-2.5 sm:px-3 py-2 border-b border-[#1e2a3a]">
+            <p className="text-[8px] sm:text-[9px] text-slate-600 uppercase tracking-widest mb-1 sm:mb-1.5">Your Position</p>
+            <div className="bg-[#0b0f1a] border border-[#1e2a3a] rounded-lg p-2 sm:p-2.5">
+              <div className="flex justify-between mb-1.5 sm:mb-2">
                 <div>
-                  <p className="text-[9px] text-slate-600 mb-0.5">Qty</p>
-                  <p className="text-[13px] font-medium text-slate-200">{formatNumber(qty)}</p>
+                  <p className="text-[8px] sm:text-[9px] text-slate-600 mb-0.5">Qty</p>
+                  <p className="text-[11px] sm:text-[13px] font-medium text-slate-200">{formatNumber(qty)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] text-slate-600 mb-0.5">Avg price</p>
-                  <p className="text-[13px] font-medium text-slate-200">₹ {formatNumber(avgPrice)}</p>
+                  <p className="text-[8px] sm:text-[9px] text-slate-600 mb-0.5">Avg price</p>
+                  <p className="text-[11px] sm:text-[13px] font-medium text-slate-200">₹ {formatNumber(avgPrice)}</p>
                 </div>
               </div>
-              <div className="flex justify-between mb-2">
+              <div className="flex justify-between mb-1.5 sm:mb-2">
                 <div>
-                  <p className="text-[9px] text-slate-600 mb-0.5">Invested</p>
-                  <p className="text-[11px] text-slate-300">₹ {formatNumber(investedValue)}</p>
+                  <p className="text-[8px] sm:text-[9px] text-slate-600 mb-0.5">Invested</p>
+                  <p className="text-[10px] sm:text-[11px] text-slate-300">₹ {formatNumber(investedValue)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] text-slate-600 mb-0.5">Current</p>
-                  <p className="text-[11px] text-slate-300">₹ {formatNumber(currentValue)}</p>
+                  <p className="text-[8px] sm:text-[9px] text-slate-600 mb-0.5">Current</p>
+                  <p className="text-[10px] sm:text-[11px] text-slate-300">₹ {formatNumber(currentValue)}</p>
                 </div>
               </div>
-              <div className="border-t border-[#1e2a3a] pt-2 flex justify-between items-center">
-                <p className="text-[10px] text-slate-500">P&L</p>
-                <p className={`text-[14px] font-medium ${isProfit ? "text-green-400" : "text-red-400"}`}>
+              <div className="border-t border-[#1e2a3a] pt-1.5 sm:pt-2 flex justify-between items-center">
+                <p className="text-[9px] sm:text-[10px] text-slate-500">P&L</p>
+                <p className={`text-[12px] sm:text-[14px] font-medium ${isProfit ? "text-green-400" : "text-red-400"}`}>
                   {isProfit ? "+" : ""}₹ {formatNumber(Math.abs(pnl))}
                 </p>
               </div>
@@ -541,9 +467,8 @@ const StockPreviewPage = () => {
           </div>
         )}
 
-        {/* OHLC */}
-        <div className="px-3 py-2 border-b border-[#1e2a3a]">
-          <p className="text-[9px] text-slate-600 uppercase tracking-widest mb-1.5">OHLC</p>
+        <div className="px-2.5 sm:px-3 py-2 border-b border-[#1e2a3a]">
+          <p className="text-[8px] sm:text-[9px] text-slate-600 uppercase tracking-widest mb-1 sm:mb-1.5">OHLC</p>
           <div className="grid grid-cols-4 gap-1">
             {[
               { label: "Open", val: normalized.open, cls: "text-slate-300" },
@@ -551,17 +476,16 @@ const StockPreviewPage = () => {
               { label: "Low", val: normalized.low, cls: "text-red-400" },
               { label: "Prev", val: normalized.prevClose, cls: "text-slate-300" },
             ].map(({ label, val, cls }) => (
-              <div key={label} className="bg-[#0b0f1a] border border-[#1e2a3a] rounded-md p-1.5 text-center">
-                <p className="text-[9px] text-slate-600 mb-0.5">{label}</p>
-                <p className={`text-[10px] ${cls}`}>{formatNumber(val)}</p>
+              <div key={label} className="bg-[#0b0f1a] border border-[#1e2a3a] rounded-md p-1 sm:p-1.5 text-center">
+                <p className="text-[7px] sm:text-[9px] text-slate-600 mb-0.5">{label}</p>
+                <p className={`text-[9px] sm:text-[10px] ${cls}`}>{formatNumber(val)}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Market stats */}
-        <div className="px-3 py-2">
-          <p className="text-[9px] text-slate-600 uppercase tracking-widest mb-1.5">Market Stats</p>
+        <div className="px-2.5 sm:px-3 py-2 border-b sm:border-b-0 border-[#1e2a3a]">
+          <p className="text-[8px] sm:text-[9px] text-slate-600 uppercase tracking-widest mb-1 sm:mb-1.5">Market Stats</p>
           <div className="grid grid-cols-2 gap-1">
             {[
               { label: "Volume", val: formatNumber(normalized.volume) },
@@ -569,11 +493,46 @@ const StockPreviewPage = () => {
               { label: "52W high", val: `₹ ${formatNumber(normalized.week52High)}` },
               { label: "52W low", val: `₹ ${formatNumber(normalized.week52Low)}` },
             ].map(({ label, val }) => (
-              <div key={label} className="bg-[#0b0f1a] border border-[#1e2a3a] rounded-md px-2 py-1.5">
-                <p className="text-[9px] text-slate-600 mb-0.5">{label}</p>
-                <p className="text-[11px] text-slate-300">{val}</p>
+              <div key={label} className="bg-[#0b0f1a] border border-[#1e2a3a] rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5">
+                <p className="text-[7px] sm:text-[9px] text-slate-600 mb-0.5">{label}</p>
+                <p className="text-[9px] sm:text-[11px] text-slate-300">{val}</p>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* ── AI STRIP (mobile only — after Market Stats) ── */}
+        <div className="sm:hidden px-2.5 py-2 bg-[#0f1623]">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[8px] text-slate-500 uppercase tracking-widest">AI Analysis</p>
+            <span className="inline-flex items-center gap-1 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-1.5 py-0.5 text-[7px] text-indigo-300">
+              <span className="h-1 w-1 rounded-full bg-indigo-300 animate-pulse" />
+              Live model
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-1 mb-2">
+            {[
+              { label: "Short term", val: aiData?.short_term, type: "signal" },
+              { label: "Long term", val: aiData?.long_term, type: "signal" },
+              { label: "Confidence", val: aiData?.confidence, type: "conf" },
+            ].map(({ label, val, type }) => (
+              <div key={label} className={`rounded-md border px-2 py-1.5 ${type === "conf" ? "bg-yellow-500/8 border-yellow-500/25" : val === "BUY" ? "bg-emerald-500/10 border-emerald-500/30" : "bg-rose-500/10 border-rose-500/30"}`}>
+                <p className="text-[7px] uppercase tracking-wide text-slate-500">{label}</p>
+                {aiLoading ? <div className="mt-1 h-2.5 w-10 bg-slate-700/80 rounded animate-pulse" /> : (
+                  <p className={`mt-1 text-[11px] font-semibold ${type === "conf" ? "text-yellow-300" : val === "BUY" ? "text-emerald-300" : "text-rose-300"}`}>{val || "—"}</p>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="rounded-lg border border-[#1f2d44] bg-gradient-to-br from-[#121a2b] via-[#0f1623] to-[#0d1421] p-2">
+            <div className="rounded-md border border-[#22324a] bg-[#0e1625]/80 px-2 py-2">
+              <p className="text-[8px] uppercase tracking-widest text-slate-500 mb-1">Model Insight</p>
+              {aiLoading ? (
+                <div className="space-y-1"><div className="h-2 bg-slate-700/80 rounded animate-pulse w-full" /><div className="h-2 bg-slate-700/80 rounded animate-pulse w-11/12" /><div className="h-2 bg-slate-700/80 rounded animate-pulse w-5/6" /></div>
+              ) : (
+                <p className="overflow-y-auto pr-1 text-[10px] leading-relaxed text-slate-200 max-h-24">{aiData?.reason || <span className="text-slate-600">No analysis available</span>}</p>
+              )}
+            </div>
           </div>
         </div>
 

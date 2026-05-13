@@ -225,16 +225,16 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
 
   
   return (
-    <div className="flex flex-col gap-7" style={{ fontFamily: "'DM Sans', sans-serif" }}>
-  
-      {/* ── Tabs + Add Button ── */}
+    <div className="flex flex-col gap-3 sm:gap-7 max-w-full overflow-x-hidden" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+
+      {/* ── Tabs ── */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1.5">
+        <div className="flex gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar pb-1">
           {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className="px-4 py-2 text-[12px] font-semibold rounded-lg transition-all duration-200"
+              className="px-2.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-[12px] font-semibold rounded-md sm:rounded-lg transition-all duration-200 whitespace-nowrap shrink-0"
               style={
                 activeTab === tab
                   ? {
@@ -257,25 +257,12 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
             </button>
           ))}
         </div>
-{/*   
-        <button
-          className="px-4 py-2 text-[11px] font-semibold rounded-lg transition-all duration-200"
-          style={{
-            background: "rgba(124,111,255,0.08)",
-            border: "1px solid rgba(124,111,255,0.2)",
-            color: "#7c6fff",
-            fontFamily: "'Syne', sans-serif",
-            letterSpacing: "0.5px",
-          }}
-        >
-          + Add Watchlist
-        </button> */}
       </div>
-  
+
       {/* ── Section Label ── */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <h2
-          className="text-[11px] font-semibold uppercase tracking-[1.5px]"
+          className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-[1.5px] shrink-0"
           style={{ color: "#5a5f78" }}
         >
           {activeTab} — Value Over Time
@@ -283,13 +270,179 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
         <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.04)" }} />
       </div>
   
-      {/* ── Table ── */}
+      {/* ── Mobile Card Layout ── */}
+           <div className="sm:hidden overflow-hidden">
+        <div style={{ maxHeight: "75vh", overflow: "auto" }} className="space-y-2 px-0.5">
+          {staticTabs.includes(activeTab) && (
+            <div className="p-10 text-center text-[10px] rounded-xl border border-borderColor bg-cardBg" style={{ color: "#5a5f78" }}>{activeTab} data coming soon...</div>
+          )}
+
+          {!staticTabs.includes(activeTab) && loading && (
+            <div className="animate-pulse space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="rounded-xl border border-borderColor/40 bg-cardBg p-3.5">
+                  <div className="flex justify-between">
+                    <div className="space-y-2"><div className="h-3 w-28 bg-white/[0.06] rounded-md" /><div className="h-2 w-16 bg-white/[0.04] rounded-md" /></div>
+                    <div className="space-y-2 text-right"><div className="h-3 w-16 bg-white/[0.06] rounded-md ml-auto" /><div className="h-2 w-20 bg-white/[0.04] rounded-md ml-auto" /></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!staticTabs.includes(activeTab) && !loading && currentData.map((item, i) => {
+            const token = String(item.scripCode);
+            const live = liveData[token];
+            const initialPrice = Number(item.initialPrice);
+            const targetPrice = Number(item.targetPrice);
+            const hasInitial = Number.isFinite(initialPrice) && initialPrice > 0;
+            const hasTarget = Number.isFinite(targetPrice) && targetPrice > 0;
+            const hasLtp = Number.isFinite(Number(live?.LastRate)) && Number(live?.LastRate) > 0;
+            const isUp = live && live.LastRate > live.PClose;
+            const exchLabel = item.exchange === "B" ? "BSE" : item.exchange === "N" ? "NSE" : "MCX";
+            let targetProgressPct = null;
+            if (hasInitial && hasTarget && hasLtp && targetPrice !== initialPrice) {
+              targetProgressPct = ((Number(live.LastRate) - initialPrice) / (targetPrice - initialPrice)) * 100;
+            }
+            const targetColor = targetProgressPct == null ? "#5a5f78" : targetProgressPct >= 100 ? "#22d38a" : targetProgressPct >= 0 ? "#7c6fff" : "#ff4d6a";
+            const changePct = live?.ChgPcnt;
+            const changeAbs = live ? (live.LastRate - live.PClose) : null;
+
+            return (
+              <div
+                key={item.stockId || i}
+                onClick={() => navigate(`/stock/${item.exchange}/${item.exchangeType}/${item.scripCode}/${item.symbol}`)}
+                className="rounded-xl border border-borderColor/60 bg-cardBg active:bg-white/[0.02] cursor-pointer overflow-hidden"
+                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.2)", margin:"10px" }}
+              >
+                {/* Main content */}
+                <div className="px-3.5 pt-3 pb-2.5">
+                  {/* Header: Name + LTP */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-bold tracking-tight truncate" style={{ fontFamily: "'Syne', sans-serif", color: "#f0f2f8" }}>{item.name}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span
+                          className="text-[7px] font-bold uppercase tracking-[0.8px] rounded-[4px] px-1.5 py-[2px]"
+                          style={{ background: "rgba(124,111,255,0.15)", color: "#9d8fff", border: "1px solid rgba(124,111,255,0.15)" }}
+                        >{exchLabel}</span>
+                        <span className="text-[9px] font-medium tracking-wide" style={{ color: "#6b7094" }}>{item.symbol}</span>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[14px] font-bold tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace", color: isUp ? "#22d38a" : "#ff4d6a" }}>
+                        ₹{live ? formatNumber(live.LastRate) : "—"}
+                      </p>
+                      <div className="flex items-center justify-end gap-1 mt-0.5">
+                        {changePct != null && (
+                          <span
+                            className="text-[9px] font-semibold px-1.5 py-[1px] rounded-[4px]"
+                            style={{
+                              color: isUp ? "#22d38a" : "#ff4d6a",
+                              background: isUp ? "rgba(34,211,138,0.1)" : "rgba(255,77,106,0.1)",
+                            }}
+                          >
+                            {isUp ? "+" : ""}{changePct.toFixed(2)}%
+                          </span>
+                        )}
+                        <span className="text-[9px] font-medium" style={{ fontFamily: "'JetBrains Mono', monospace", color: isUp ? "#22d38a80" : "#ff4d6a80" }}>
+                          {changeAbs != null ? `${isUp ? "+" : ""}${changeAbs.toFixed(2)}` : ""}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stats grid */}
+                  <div
+                    className="grid grid-cols-4 gap-1 mt-2.5 rounded-lg px-2 py-2"
+                    style={{ background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}
+                  >
+                    {[
+                      { label: "HIGH", value: live ? formatNumber(live.High) : "—" },
+                      { label: "LOW", value: live ? formatNumber(live.Low) : "—" },
+                      { label: "OPEN", value: live ? formatNumber(live.OpenRate) : "—" },
+                      { label: "CLOSE", value: live ? formatNumber(live.PClose) : "—" },
+                    ].map((s) => (
+                      <div key={s.label} className="text-center">
+                        <p className="text-[7px] font-semibold uppercase tracking-[0.8px]" style={{ color: "#4a4f68" }}>{s.label}</p>
+                        <p className="text-[10px] font-semibold mt-px" style={{ fontFamily: "'JetBrains Mono', monospace", color: "#c8cce0" }}>{s.value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Target progress bar */}
+                  {targetProgressPct != null && (
+                    <div className="mt-2.5">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[7px] font-semibold uppercase tracking-[0.8px]" style={{ color: "#4a4f68" }}>Target Progress</span>
+                        <span className="text-[9px] font-bold" style={{ fontFamily: "'JetBrains Mono', monospace", color: targetColor }}>
+                          {targetProgressPct.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(Math.max(targetProgressPct, 0), 100)}%`,
+                            background: targetColor,
+                            boxShadow: `0 0 8px ${targetColor}40`,
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between mt-1 text-[7px]" style={{ fontFamily: "'JetBrains Mono', monospace", color: "#4a4f68" }}>
+                        <span>{hasInitial ? `₹${formatNumber(initialPrice.toFixed(0))}` : "—"}</span>
+                        <span style={{ color: "#7c6fff" }}>{hasTarget ? `₹${formatNumber(targetPrice.toFixed(0))}` : "—"}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action bar */}
+                <div
+                  className="flex items-center gap-0 border-t"
+                  style={{ borderColor: "rgba(255,255,255,0.04)", background: "rgba(255,255,255,0.01)" }}
+                >
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }}
+                    className="flex-1 py-2 text-[10px] font-bold tracking-wide transition-colors active:bg-white/[0.03]"
+                    style={{ color: "#22d38a", borderRight: "1px solid rgba(255,255,255,0.04)" }}
+                  >BUY</button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }}
+                    className="flex-1 py-2 text-[10px] font-bold tracking-wide transition-colors active:bg-white/[0.03]"
+                    style={{ color: "#ff4d6a", borderRight: "1px solid rgba(255,255,255,0.04)" }}
+                  >SELL</button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setTargetStock(item); setIsTargetModalOpen(true); }}
+                    className="flex-1 py-2 text-[10px] font-bold tracking-wide transition-colors active:bg-white/[0.03]"
+                    style={{ color: "#7c6fff", borderRight: "1px solid rgba(255,255,255,0.04)" }}
+                  >TARGET</button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleRemove(item); }}
+                    className="px-4 py-2 transition-colors active:bg-white/[0.03]"
+                  >
+                    <FiTrash2 size={12} style={{ color: "#ff4d6a" }} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {!staticTabs.includes(activeTab) && !loading && currentData.length === 0 && (
+            <div className="p-10 text-center rounded-xl border border-borderColor bg-cardBg">
+              <p className="text-[10px] font-medium" style={{ color: "#5a5f78" }}>No stocks in this watchlist</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Desktop Table ── */}
       <div
-        className="rounded-[20px] border border-borderColor overflow-hidden bg-cardBg overflow-x-auto"
+        className="hidden sm:block rounded-[20px] border border-borderColor overflow-hidden bg-cardBg overflow-x-auto"
         style={{ maxWidth: "99vw" }}
       >
         <div className="min-w-[900px]">
-  
+
           {/* Header */}
           <div
             className="grid px-5 py-3 border-b border-borderColor"
@@ -310,36 +463,22 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
               >
                 {col.main}
                 {col.sub && (
-                  <div
-                    className="text-[9px] font-normal tracking-[0.5px] mt-0.5"
-                    style={{ color: "rgba(90,95,120,0.7)", textTransform: "none" }}
-                  >
-                    {col.sub}
-                  </div>
+                  <div className="text-[9px] font-normal tracking-[0.5px] mt-0.5" style={{ color: "rgba(90,95,120,0.7)", textTransform: "none" }}>{col.sub}</div>
                 )}
               </span>
             ))}
           </div>
-  
+
           {/* Body */}
-          <div style={{maxHeight: "65vh",
-    overflow: "auto"}}>
-            {/* Static tabs placeholder */}
+          <div style={{ maxHeight: "65vh", overflow: "auto" }}>
             {staticTabs.includes(activeTab) && (
-              <div className="p-12 text-center text-[13px]" style={{ color: "#5a5f78" }}>
-                {activeTab} data coming soon...
-              </div>
+              <div className="p-12 text-center text-[13px]" style={{ color: "#5a5f78" }}>{activeTab} data coming soon...</div>
             )}
-  
-            {/* Loading Skeleton */}
+
             {!staticTabs.includes(activeTab) && loading && (
               <div className="animate-pulse">
                 {[...Array(6)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="grid px-5 py-4 border-b border-borderColor"
-                    style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1fr 1fr" }}
-                  >
+                  <div key={i} className="grid px-5 py-4 border-b border-borderColor" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1fr 1fr" }}>
                     <div className="space-y-2">
                       <div className="h-3 w-32 bg-borderColor rounded" />
                       <div className="h-2 w-20 bg-borderColor rounded" />
@@ -354,8 +493,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                 ))}
               </div>
             )}
-  
-            {/* Rows */}
+
             {!staticTabs.includes(activeTab) && !loading &&
               currentData.map((item, i) => {
                 const token = String(item.scripCode);
@@ -367,22 +505,12 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                 const hasLtp = Number.isFinite(Number(live?.LastRate)) && Number(live?.LastRate) > 0;
                 const isUp = live && live.LastRate > live.PClose;
                 const exchLabel = item.exchange === "B" ? "BSE" : item.exchange === "N" ? "NSE" : "MCX";
-  
                 let targetProgressPct = null;
                 if (hasInitial && hasTarget && hasLtp && targetPrice !== initialPrice) {
-                  targetProgressPct =
-                    ((Number(live.LastRate) - initialPrice) / (targetPrice - initialPrice)) * 100;
+                  targetProgressPct = ((Number(live.LastRate) - initialPrice) / (targetPrice - initialPrice)) * 100;
                 }
-  
-                const targetColor =
-                  targetProgressPct == null
-                    ? "#5a5f78"
-                    : targetProgressPct >= 100
-                    ? "#22d38a"
-                    : targetProgressPct >= 0
-                    ? "#7c6fff"
-                    : "#ff4d6a";
-  
+                const targetColor = targetProgressPct == null ? "#5a5f78" : targetProgressPct >= 100 ? "#22d38a" : targetProgressPct >= 0 ? "#7c6fff" : "#ff4d6a";
+
                 return (
                   <div
                     key={item.stockId || i}
@@ -390,190 +518,47 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                     className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 hover:bg-white/[0.025] cursor-pointer"
                     style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1fr 1fr" }}
                   >
-                    {/* NAME */}
                     <div className="text-left flex flex-col justify-center">
-                      <p
-                        className="text-[13px] font-semibold tracking-tight"
-                        style={{ fontFamily: "'Syne', sans-serif", color: "#f0f2f8" }}
-                      >
-                        {item.name}
-                      </p>
+                      <p className="text-[13px] font-semibold tracking-tight" style={{ fontFamily: "'Syne', sans-serif", color: "#f0f2f8" }}>{item.name}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span
-                          className="text-[9px] font-semibold tracking-[0.5px] rounded px-1.5 py-0.5"
-                          style={{ background: "rgba(124,111,255,0.12)", color: "#7c6fff" }}
-                        >
-                          {exchLabel}
-                        </span>
+                        <span className="text-[9px] font-semibold tracking-[0.5px] rounded px-1.5 py-0.5" style={{ background: "rgba(124,111,255,0.12)", color: "#7c6fff" }}>{exchLabel}</span>
                         <span className="text-[11px] font-medium" style={{ color: "#5a5f78" }}>{item.symbol}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setTargetStock(item); setIsTargetModalOpen(true); }}
-                          className="text-[9px] font-semibold px-2 py-0.5 rounded-full transition-all duration-150"
-                          style={{
-                            border: "1px solid rgba(34,211,138,0.3)",
-                            color: "#22d38a",
-                            background: "rgba(34,211,138,0.06)",
-                            letterSpacing: "0.3px",
-                          }}
-                        >
-                          Set Target
-                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setTargetStock(item); setIsTargetModalOpen(true); }} className="text-[9px] font-semibold px-2 py-0.5 rounded-full transition-all duration-150" style={{ border: "1px solid rgba(34,211,138,0.3)", color: "#22d38a", background: "rgba(34,211,138,0.06)", letterSpacing: "0.3px" }}>Set Target</button>
                       </div>
                     </div>
-  
-                    {/* LTP */}
                     <div className="flex flex-col items-center">
-                      <span
-                       className="text-[15px] font-semibold tracking-tight"
-                       style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace", color: isUp ? "#22d38a" : "#ff4d6a" }}
-                       >
-                        ₹ {live ? formatNumber(live.LastRate) : "—"}
-                      </span>
-                      <span
-                        className="text-[15px]  font-medium"
-                        style={{
-                          fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
-                          color: isUp ? "#22d38a" : "#ff4d6a",
-                          // borderTop: "1px solid rgba(186,186,186,0.08)",
-                        }}
-                      >
-                        {live
-                          ? `${isUp ? "+" : ""}${(live.LastRate - live.PClose).toFixed(2)} (${live.ChgPcnt.toFixed(2)}%)`
-                          : "—"}
-                      </span>
+                      <span className="text-[15px] font-semibold tracking-tight" style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace", color: isUp ? "#22d38a" : "#ff4d6a" }}>₹ {live ? formatNumber(live.LastRate) : "—"}</span>
+                      <span className="text-[15px] font-medium" style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace", color: isUp ? "#22d38a" : "#ff4d6a" }}>{live ? `${isUp ? "+" : ""}${(live.LastRate - live.PClose).toFixed(2)} (${live.ChgPcnt.toFixed(2)}%)` : "—"}</span>
                     </div>
-  
-                    {/* HIGH / LOW */}
-                    <div
-                      className="text-[12.5px] mx-auto w-[120px] font-medium"
-                      style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace" }}
-                    >
-                      <div
-                        className="flex justify-between pb-1 mb-1"
-                        style={{ borderBottom: "1px solid rgba(186,186,186,0.08)" }}
-                      >
-                        <span style={{ color: "#5a5f78" }}>H</span>
-                        <span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.High) : "—"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span style={{ color: "#5a5f78" }}>L</span>
-                        <span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.Low) : "—"}</span>
-                      </div>
+                    <div className="text-[12.5px] mx-auto w-[120px] font-medium" style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace" }}>
+                      <div className="flex justify-between pb-1 mb-1" style={{ borderBottom: "1px solid rgba(186,186,186,0.08)" }}><span style={{ color: "#5a5f78" }}>H</span><span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.High) : "—"}</span></div>
+                      <div className="flex justify-between"><span style={{ color: "#5a5f78" }}>L</span><span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.Low) : "—"}</span></div>
                     </div>
-  
-                    {/* OPEN / PREV CLOSE */}
-                    <div
-                     className="text-[12.5px] mx-auto w-[120px] font-medium"
-                     style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace" }}
-                    >
-                      <div
-                        className="flex justify-between pb-1 mb-1"
-                        style={{ borderBottom: "1px solid rgba(186,186,186,0.08)" }}
-                      >
-                        <span style={{ color: "#5a5f78" }}>O</span>
-                        <span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.OpenRate) : "—"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span style={{ color: "#5a5f78" }}>PC</span>
-                        <span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.PClose) : "—"}</span>
-                      </div>
+                    <div className="text-[12.5px] mx-auto w-[120px] font-medium" style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace" }}>
+                      <div className="flex justify-between pb-1 mb-1" style={{ borderBottom: "1px solid rgba(186,186,186,0.08)" }}><span style={{ color: "#5a5f78" }}>O</span><span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.OpenRate) : "—"}</span></div>
+                      <div className="flex justify-between"><span style={{ color: "#5a5f78" }}>PC</span><span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.PClose) : "—"}</span></div>
                     </div>
-  
-                    {/* INITIAL / TARGET */}
-                    <div
-                      className="text-[12.5px] mx-auto w-[130px] font-medium"
-                      style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace" }}
-                    >
-                      <div
-                        className="flex justify-between pb-1 mb-1"
-                        style={{ borderBottom: "1px solid rgba(186,186,186,0.08)" }}
-                      >
-                        <span style={{ color: "#5a5f78" }}>I</span>
-                        <span style={{ color: "#f0f2f8" }}>
-                          {hasInitial ? `₹ ${formatNumber(initialPrice.toFixed(2))}` : "—"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span style={{ color: "#7c6fff" }}>T</span>
-                        <span style={{ color: "#7c6fff" }}>
-                          {hasTarget ? `₹ ${formatNumber(targetPrice.toFixed(2))}` : "—"}
-                        </span>
-                      </div>
+                    <div className="text-[12.5px] mx-auto w-[130px] font-medium" style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace" }}>
+                      <div className="flex justify-between pb-1 mb-1" style={{ borderBottom: "1px solid rgba(186,186,186,0.08)" }}><span style={{ color: "#5a5f78" }}>I</span><span style={{ color: "#f0f2f8" }}>{hasInitial ? `₹ ${formatNumber(initialPrice.toFixed(2))}` : "—"}</span></div>
+                      <div className="flex justify-between"><span style={{ color: "#7c6fff" }}>T</span><span style={{ color: "#7c6fff" }}>{hasTarget ? `₹ ${formatNumber(targetPrice.toFixed(2))}` : "—"}</span></div>
                     </div>
-  
-                    {/* TARGET % */}
                     <div className="flex justify-center items-center">
-                      <span
-                        // className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold"
-                        className="inline-flex items-center px-3 py-1.5 rounded-full text-[12.5px] font-semibold tracking-tight"
-                        style={{
-                          fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
-                          color: targetColor,
-                          background:
-                            targetProgressPct == null
-                              ? "transparent"
-                              : targetProgressPct >= 100
-                              ? "rgba(34,211,138,0.08)"
-                              : targetProgressPct >= 0
-                              ? "rgba(124,111,255,0.08)"
-                              : "rgba(255,77,106,0.08)",
-                          border:
-                            targetProgressPct == null
-                              ? "none"
-                              : `1px solid ${
-                                  targetProgressPct >= 100
-                                    ? "rgba(34,211,138,0.2)"
-                                    : targetProgressPct >= 0
-                                    ? "rgba(124,111,255,0.2)"
-                                    : "rgba(255,77,106,0.2)"
-                                }`,
-                        }}
-                      >
+                      <span className="inline-flex items-center px-3 py-1.5 rounded-full text-[12.5px] font-semibold tracking-tight" style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace", color: targetColor, background: targetProgressPct == null ? "transparent" : targetProgressPct >= 100 ? "rgba(34,211,138,0.08)" : targetProgressPct >= 0 ? "rgba(124,111,255,0.08)" : "rgba(255,77,106,0.08)", border: targetProgressPct == null ? "none" : `1px solid ${targetProgressPct >= 100 ? "rgba(34,211,138,0.2)" : targetProgressPct >= 0 ? "rgba(124,111,255,0.2)" : "rgba(255,77,106,0.2)"}` }}>
                         {targetProgressPct == null ? "—" : `${targetProgressPct.toFixed(2)}%`}
                       </span>
                     </div>
-  
-                    {/* HOVER ACTIONS */}
-                    <div 
-                    style={{
-                      background: "linear-gradient(to right, rgba(23,29,44,0) 0%, rgba(23,29,44,0.7) 50%, rgba(23,29,44,1) 100%)",
-                      height: "100%",
-                      paddingLeft: "10vh"
-                    }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }}
-                        className="px-3 py-1 text-[11px] font-semibold rounded-lg transition"
-                        style={{ border: "1px solid rgba(34,211,138,0.3)", background: "rgba(34,211,138,0.07)", color: "#22d38a" }}
-                      >
-                        Buy
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }}
-                        className="px-3 py-1 text-[11px] font-semibold rounded-lg transition"
-                        style={{ border: "1px solid rgba(255,77,106,0.3)", background: "rgba(255,77,106,0.07)", color: "#ff4d6a" }}
-                      >
-                        Sell
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleRemove(item); }}
-                        className="p-1.5 rounded-lg transition"
-                        style={{ background: "rgba(255,77,106,0.07)", border: "1px solid rgba(255,77,106,0.2)" }}
-                      >
-                        <FiTrash2 size={13} style={{ color: "#ff4d6a" }} />
-                      </button>
+                    <div style={{ background: "linear-gradient(to right, rgba(23,29,44,0) 0%, rgba(23,29,44,0.7) 50%, rgba(23,29,44,1) 100%)", height: "100%", paddingLeft: "10vh" }} className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(34,211,138,0.3)", background: "rgba(34,211,138,0.07)", color: "#22d38a" }}>Buy</button>
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(255,77,106,0.3)", background: "rgba(255,77,106,0.07)", color: "#ff4d6a" }}>Sell</button>
+                      <button onClick={(e) => { e.stopPropagation(); handleRemove(item); }} className="p-1.5 rounded-lg transition" style={{ background: "rgba(255,77,106,0.07)", border: "1px solid rgba(255,77,106,0.2)" }}><FiTrash2 size={13} style={{ color: "#ff4d6a" }} /></button>
                     </div>
                   </div>
                 );
               })}
-  
-            {/* Empty */}
+
             {!staticTabs.includes(activeTab) && !loading && currentData.length === 0 && (
-              <div className="p-12 text-center text-[13px]" style={{ color: "#5a5f78" }}>
-                No stocks in this watchlist
-              </div>
+              <div className="p-12 text-center text-[13px]" style={{ color: "#5a5f78" }}>No stocks in this watchlist</div>
             )}
-  
           </div>
         </div>
       </div>

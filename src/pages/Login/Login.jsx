@@ -266,7 +266,7 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
       </div>
 
       {/* ── RIGHT PANEL — 30% ── */}
-      <div className="w-full lg:w-[30%] relative flex items-center justify-center px-8 py-12 overflow-hidden">
+      <div className="w-full lg:w-[30%] relative flex items-center justify-center px-4 py-6 sm:px-8 sm:py-12 overflow-hidden">
 
         {/* Deep dark base */}
         <div className="absolute inset-0 bg-[#080810]" />
@@ -308,31 +308,29 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
         >
 
           {/* Mobile logo */}
-          <div className="flex flex-col items-center mb-8 lg:hidden">
-            <img src={logo} alt="FahadTradeX" className="h-10 mb-3" />
-            <span className="text-lg font-bold text-accent">FahadTradeX</span>
+          <div className="flex flex-col items-center mb-5 sm:mb-8 lg:hidden">
+            <img src={logo} alt="FahadTradeX" className="h-7 sm:h-10 mb-2 sm:mb-3" />
+            <span className="text-sm sm:text-lg font-bold text-accent">FahadTradeX</span>
           </div>
 
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex justify-center">
-            </div>
-            <h2 className="text-3xl font-bold text-white text-center leading-snug">
+          <div className="mb-5 sm:mb-8">
+            <h2 className="text-xl sm:text-3xl font-bold text-white text-center leading-snug">
               Sign in to <br />
               <span className="text-accent">your account</span>
             </h2>
-            <p className="text-white/70 text-sm mt-2 text-center">
+            <p className="text-white/70 text-[11px] sm:text-sm mt-1.5 sm:mt-2 text-center">
               Enter your credentials below to continue.
             </p>
           </div>
 
           {/* Form */}
-          <div className="space-y-5">
+          <div className="space-y-3.5 sm:space-y-5">
 
             {/* Email */}
-            <div className="space-y-2">
+            <div className="space-y-1.5 sm:space-y-2">
               <div className="flex items-center gap-2">
-                <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
+                <label className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
                   Email Address
                 </label>
                 <div className="relative">
@@ -380,7 +378,7 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-3.5 bg-white/[0.04] border border-white/10 rounded-xl text-sm text-white
+                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3.5 bg-white/[0.04] border border-white/10 rounded-lg sm:rounded-xl text-xs sm:text-sm text-white
                     placeholder-gray-700 focus:outline-none focus:border-accent/60 focus:bg-white/[0.07]
                     transition-all duration-200"
                 />
@@ -392,8 +390,8 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
             </div>
 
             {/* Password */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
+            <div className="space-y-1.5 sm:space-y-2">
+              <label className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
                 Password
               </label>
               <div className="relative group">
@@ -403,7 +401,7 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-4 py-3.5 pr-12 bg-white/[0.04] border border-white/10 rounded-xl text-sm text-white
+                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3.5 pr-10 sm:pr-12 bg-white/[0.04] border border-white/10 rounded-lg sm:rounded-xl text-xs sm:text-sm text-white
                     placeholder-gray-700 focus:outline-none focus:border-accent/60 focus:bg-white/[0.07]
                     transition-all duration-200"
                 />
@@ -426,7 +424,7 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
               whileTap={!loading ? { scale: 0.97 } : {}}
               onClick={handleLogin}
               disabled={loading}
-              className={`w-full py-3.5 mt-2 font-semibold rounded-xl transition-all text-sm flex items-center justify-center gap-2
+              className={`w-full py-2.5 sm:py-3.5 mt-1.5 sm:mt-2 font-semibold rounded-lg sm:rounded-xl transition-all text-xs sm:text-sm flex items-center justify-center gap-2
                 ${loading
                   ? "bg-white/5 text-white/70 cursor-not-allowed border border-white/8"
                   : "bg-accent text-black hover:brightness-110"
@@ -449,11 +447,11 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
               )}
             </motion.button>
 
-            <div className="flex justify-end mt-3">
+            <div className="flex justify-end mt-2 sm:mt-3">
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="text-xs text-accent hover:underline"
+                className="text-[10px] sm:text-xs text-accent hover:underline"
               >
                 Forgot Password?
               </button>
@@ -462,21 +460,21 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
           </div>
 
           {/* Divider */}
-          <div className="flex items-center gap-3 my-7">
+          <div className="flex items-center gap-3 my-5 sm:my-7">
             <div className="flex-1 h-px bg-white/[0.06]" />
-            <span className="text-gray-700 text-[10px] tracking-widest uppercase">or</span>
+            <span className="text-gray-700 text-[9px] sm:text-[10px] tracking-widest uppercase">or</span>
             <div className="flex-1 h-px bg-white/[0.06]" />
           </div>
 
           {/* Footer */}
-          <div className="text-center space-y-4">
-            <p className="text-sm text-white/70">
+          <div className="text-center space-y-2.5 sm:space-y-4">
+            <p className="text-xs sm:text-sm text-white/70">
               No account yet?{" "}
               <Link to="/signup" className="text-accent hover:underline font-semibold">
                 Sign up free
               </Link>
             </p>
-            <Link to="/" className="block text-xs text-white/70  hover:text-accent transition">
+            <Link to="/" className="block text-[10px] sm:text-xs text-white/70 hover:text-accent transition">
               ← Back to Home
             </Link>
           </div>

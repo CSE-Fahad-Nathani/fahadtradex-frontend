@@ -55,20 +55,20 @@ const features = [
 
 function FeaturesSection() {
   return (
-    <section className="py-24 px-6 bg-primaryBg">
+    <section className="py-10 sm:py-24 px-3 sm:px-6 bg-primaryBg">
       <div className="max-w-7xl mx-auto">
 
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">
+        <div className="text-center mb-8 sm:mb-16">
+          <h2 className="text-lg sm:text-3xl md:text-4xl font-bold mb-2 sm:mb-4">
             Built for <span className="text-accent">Serious Learners</span>
           </h2>
-          <p className="text-gray-400 max-w-xl mx-auto">
+          <p className="text-gray-400 text-[11px] sm:text-base max-w-xl mx-auto leading-relaxed">
             Every feature mirrors how real brokerage platforms work - from margin calculations
             to live order books.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-5">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
@@ -79,15 +79,15 @@ function FeaturesSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.07 }}
                 viewport={{ once: true }}
-                className="bg-cardBg border border-borderColor p-6 rounded-xl"
+                className="bg-cardBg border border-borderColor p-3 sm:p-6 rounded-lg sm:rounded-xl"
               >
-                <div className="mb-4 text-accent">
-                  <Icon size={26} />
+                <div className="mb-2 sm:mb-4 text-accent">
+                  <Icon size={18} className="sm:w-[26px] sm:h-[26px]" />
                 </div>
-                <h3 className="text-base font-semibold mb-2 text-white">
+                <h3 className="text-[11px] sm:text-base font-semibold mb-1 sm:mb-2 text-white">
                   {feature.title}
                 </h3>
-                <p className="text-gray-400 text-sm leading-relaxed">
+                <p className="text-gray-400 text-[10px] sm:text-sm leading-relaxed">
                   {feature.description}
                 </p>
               </motion.div>
@@ -101,11 +101,11 @@ function FeaturesSection() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
           viewport={{ once: true }}
-          className="text-center mt-14"
+          className="text-center mt-8 sm:mt-14"
         >
           <Link
             to="/documentation"
-            className="inline-flex items-center gap-2 px-6 py-3 border border-borderColor hover:border-accent rounded-lg text-sm transition text-gray-300 hover:text-accent"
+            className="inline-flex items-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-2 sm:py-3 border border-borderColor hover:border-accent rounded-lg text-[11px] sm:text-sm transition text-gray-300 hover:text-accent"
           >
             View Full Documentation →
           </Link>

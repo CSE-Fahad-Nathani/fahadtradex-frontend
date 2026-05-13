@@ -31,7 +31,7 @@ function MainLayout( {triggerWatchlistUpdate, setTriggerWatchlistUpdate, trigger
 <div className="absolute inset-0 bg-black/90  backdrop-blur-sm" />
 
 {/* 🔥 Content */}
-<div className="relative p-6">
+<div className="relative p-2 sm:p-6 pb-16 md:pb-6">
   <Outlet />
 </div>
 
