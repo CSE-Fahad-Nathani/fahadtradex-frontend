@@ -1,0 +1,153 @@
+const firebaseConfig = {
+  apiKey: "AIzaSyAc57H68ZCA4PS6XZ-2tfM1B_9pOR10h5U",
+  authDomain: "fahadtradex.firebaseapp.com",
+  projectId: "fahadtradex",
+  storageBucket: "fahadtradex.firebasestorage.app",
+  messagingSenderId: "715754798387",
+  appId: "1:715754798387:web:3def604c3a72e22005d246"
+};
+
+Encrpytion key: KqBeixBPcfGjjO7PrW3AfuWSL01pfEid
+user Id: DIfDWTTzGWL
+App Source: DIfDWTTzGWL
+User Password: 5Ve8g12TlqY
+API key: 2ZYTTjNpgVkApJTEmJokHr2WYWNPE5Cy
+client code: 53990679
+
+https://dev-openapi.5paisa.com/WebVendorLogin/VLogin/Index?VendorKey=YOUR_API_KEY&ResponseURL=YOUR_URL
+
+
+https://dev-openapi.5paisa.com/WebVendorLogin/VLogin/Index?VendorKey=2ZYTTjNpgVkApJTEmJokHr2WYWNPE5Cy&ResponseURL=http://localhost:5173/dashboard
+
+
+
+
+Now the dashboard and stuff... i will create in another chat as this chat is too much lagging... so give me a prompt explaining what we have done yet in login (no need for sign up), also mention that in this new chat we will design dashboard which will have a common header throughout, which we will discuss at the time of development... so give me prompt
+
+this is my projects logo... i want to create a full screen login loader video for it...it is a trading platform project, this will appear when user logs in and will stay on the screen till the dashboard is ready... so give me a loader... where the logo is in center and takes  20% of screen... and start and end point should be same so i can play this in a loop and it doesnt look bad is should look like a loader... something should tell loading is  going on...
+
+
+
+
+
+
+
+
+fetch LTP CURL:
+```
+curl --location 'https://Openapi.5paisa.com/VendorsAPI/Service1.svc/v1/MarketSnapshot' \
+--header 'Content-Type: application/json' \
+--header 'Authorization: Bearer <AccessToken:string>' \
+--data '{
+  "head": {
+    "key": "<AppKey:string>"
+  },
+  "body": {
+    "ClientCode": "<ClientCode:string>",
+    "Data": [
+      {
+        "Exchange": "N",
+        "ExchangeType": "C",
+        "ScripCode": 1660
+      }
+    ]
+  }
+}'
+
+```
+
+
+
+### 🧠 MCX Trading Calculation (Simple Explanation)
+
+In MCX trading (like Silver, Gold, Crude), you don’t buy “1 unit” like stocks.
+Instead, you trade in **lots**, and each lot has a fixed **lot size**.
+
+---
+
+### 📦 Key Concepts
+
+* **Price (LTP)** → Current market price
+* **Lot Size** → Quantity per lot (e.g., Silver = 30)
+* **Lots** → Number of lots user buys
+
+---
+
+### 💰 Total Contract Value
+
+This is the full value of the trade:
+
+> Contract Value = Price × Lot Size × Lots
+
+---
+
+### 💸 Margin (Actual money used)
+
+You don’t pay full value. Only a percentage is blocked:
+
+> Margin ≈ 10%–20% of Contract Value
+
+---
+
+### 📈 Profit & Loss (P&L)
+
+This is the most important calculation:
+
+> P&L = (Sell Price - Buy Price) × Lot Size × Lots
+
+---
+
+### 📊 Example (Silver)
+
+* Buy Price = ₹232600
+* Sell Price = ₹233000
+* Lot Size = 30
+* Lots = 1
+
+> P&L = (233000 - 232600) × 30 = ₹12,000 Profit
+
+---
+
+### ❗ Key Rules
+
+* Always trade in **lots**, not units
+* Always multiply by **lot size**
+* P&L depends only on **price difference**, not total value
+* Margin is used instead of full capital
+
+---
+
+### ✅ Final Summary
+
+> MCX Trading = (Price Difference) × Lot Size × Lots
+
+
+- Get Margin API
+- Zustand integration of margin
+- cards --> 
+- reason color
+- pnl % addition when selling
+- buy / sell logic for MCX
+- Preview Modal [API + frontend]
+- Dashboard
+
+
+
+
+Total Invested Amount
+Current Value
+Overall Profits(%)
+Today's P/L(%)
+Margin
+
+Total Portfdlio (margin + Total current value)
+Available Margin
+Invested Margin
+Unrealised P&L (%)
+
+Total Invested Amount / Invested Margin
+Total Current Value
+Overall Profits(%)
+Today's P/L(%)
+Margin / Available Margin
+Total Portfdlio (margin + Total current value)

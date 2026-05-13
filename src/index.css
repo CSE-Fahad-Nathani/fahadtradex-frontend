@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hero glow background */
+.hero-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  background: #00FFA3;
+  opacity: 0.08;
+  filter: blur(150px);
+  border-radius: 50%;
+}
+
+::-webkit-scrollbar {
+  width: 2px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(6px);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.6);
+  border-radius: 999px;
+  backdrop-filter: blur(10px);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(96, 165, 250, 0.9);
+}
+
+
+
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.market-status-badge.open .status-dot {
+  background-color: #28c76f;
+}
+
+.market-status-badge.closed .status-dot {
+  background-color: #ea5455;
+}
+
+.market-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* OPEN */
+.market-status-badge.open {
+  background: rgba(40, 199, 111, 0.12);
+  color: #28c76f;
+}
+
+/* CLOSED */
+.market-status-badge.closed {
+  background: rgba(234, 84, 85, 0.12);
+  color: #ea5455;
+}
+
+.market-status-badge.open .status-dot {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
