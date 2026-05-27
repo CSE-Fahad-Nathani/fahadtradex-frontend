@@ -113,8 +113,6 @@ function Dashboard() {
 
   const chartPoints = useMemo(() => {
     const TARGET_POINTS = 12;
-    if (rawHistory.length === 0) return [];
-
     const now = Date.now();
     const windowMs = selectedWindowMinutes * 60 * 1000;
     const startMs = now - windowMs;
@@ -151,7 +149,48 @@ function Dashboard() {
     [chartPoints]
   );
 
-  const hasEnoughHistory = chartPointsWithValue.length >= 2;
+  /** Blends ±10% dummy curve with bucketed live points; synthetic prefix anchors to first real bucket so seam is invisible. */
+  const areaChartData = useMemo(() => {
+    const TARGET_POINTS = 12;
+    const base = stats.pnl;
+
+    const rawSynth = (i) => {
+      const phase = (i / Math.max(1, TARGET_POINTS - 1)) * Math.PI * 2;
+      if (Math.abs(base) >= 1e-6) {
+        return Number((base * (1 + 0.1 * Math.sin(phase))).toFixed(2));
+      }
+      return Number(Math.sin(phase).toFixed(2));
+    };
+
+    const firstRealIdx = chartPoints.findIndex((p) => typeof p.pnl === "number");
+
+    if (firstRealIdx === -1) {
+      return chartPoints.map((p, i) => ({
+        ...p,
+        pnl: rawSynth(i),
+      }));
+    }
+
+    const R = chartPoints[firstRealIdx].pnl;
+    if (firstRealIdx === 0) {
+      return chartPoints.map((p) => ({
+        ...p,
+        pnl: typeof p.pnl === "number" ? p.pnl : R,
+      }));
+    }
+
+    const synAtAnchor = rawSynth(firstRealIdx - 1);
+
+    return chartPoints.map((p, i) => {
+      let pnl = p.pnl;
+      if (i < firstRealIdx) {
+        pnl = Number((R + rawSynth(i) - synAtAnchor).toFixed(2));
+      } else if (typeof pnl !== "number") {
+        pnl = typeof R === "number" ? R : rawSynth(i);
+      }
+      return { ...p, pnl };
+    });
+  }, [chartPoints, stats.pnl]);
 
   const trend = useMemo(() => {
     if (chartPointsWithValue.length < 2) return "neutral";
@@ -309,9 +348,9 @@ function Dashboard() {
         ))}
       </section>
 
-      <section className="grid grid-cols-1 xl:grid-cols-3 gap-2 sm:gap-4">
-        <div className="xl:col-span-2 rounded-xl sm:rounded-2xl border border-borderColor bg-cardBg p-3 sm:p-4 md:p-5">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
+      <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2 sm:gap-4 min-w-0">
+        <div className="min-w-0 rounded-xl sm:rounded-2xl border border-borderColor bg-cardBg p-3 sm:p-4 md:p-5 flex flex-col min-h-0 h-full">
+          <div className="flex items-center justify-between mb-3 sm:mb-4 shrink-0">
             <div>
               <p className="text-[9px] sm:text-xs text-gray-400">Performance</p>
               <h2 className="text-xs sm:text-lg font-semibold text-white">Live P&L Trend</h2>
@@ -337,55 +376,49 @@ function Dashboard() {
             </div>
           </div>
 
-          <div className="h-48 sm:h-72">
-            {hasEnoughHistory ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartPoints}>
-                  <defs>
-                    <linearGradient id="pnlGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={stats.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0.35} />
-                      <stop offset="95%" stopColor={stats.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="t" tick={{ fill: "#94a3b8", fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                  <YAxis
-                    tick={{ fill: "#94a3b8", fontSize: 9 }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={52}
-                    tickFormatter={(value) => `₹${formatNumber(Number(value).toFixed(0))}`}
-                  />
-                  <Tooltip
-                    formatter={(value) => [`₹ ${formatNumber(Number(value).toFixed(2))}`, "P&L"]}
-                    contentStyle={{
-                      background: "#0f172a",
-                      border: "1px solid #1f2937",
-                      borderRadius: "12px",
-                      color: "#fff",
-                    }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="pnl"
-                    stroke={stats.pnl >= 0 ? "#22c55e" : "#ef4444"}
-                    strokeWidth={2.5}
-                    fillOpacity={1}
-                    fill="url(#pnlGradient)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center rounded-lg sm:rounded-xl border border-dashed border-borderColor text-[10px] sm:text-sm text-gray-400 px-4 text-center">
-                Collecting live P&L points for the selected window...
-              </div>
-            )}
+          <div className="flex-1 min-h-[12rem] sm:min-h-[16rem] min-w-0 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={areaChartData}>
+                <defs>
+                  <linearGradient id="pnlGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={stats.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0.35} />
+                    <stop offset="95%" stopColor={stats.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="t" tick={{ fill: "#94a3b8", fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                <YAxis
+                  tick={{ fill: "#94a3b8", fontSize: 9 }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={52}
+                  tickFormatter={(value) => `₹${formatNumber(Number(value).toFixed(0))}`}
+                />
+                <Tooltip
+                  formatter={(value) => [`₹ ${formatNumber(Number(value).toFixed(2))}`, "P&L"]}
+                  contentStyle={{
+                    background: "#0f172a",
+                    border: "1px solid #1f2937",
+                    borderRadius: "12px",
+                    color: "#fff",
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="pnl"
+                  stroke={stats.pnl >= 0 ? "#22c55e" : "#ef4444"}
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#pnlGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="rounded-xl sm:rounded-2xl border border-borderColor bg-cardBg p-3 sm:p-4 md:p-5">
+        <div className="min-w-0 overflow-hidden rounded-xl sm:rounded-2xl border border-borderColor bg-cardBg p-3 sm:p-4 md:p-5">
           <p className="text-[9px] sm:text-xs text-gray-400">Exposure Mix</p>
           <h2 className="text-xs sm:text-lg font-semibold text-white mb-2 sm:mb-4">Allocation by Exchange</h2>
-          <div className="h-44 sm:h-60">
+          <div className="min-w-0 h-44 sm:h-60">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -420,53 +453,67 @@ function Dashboard() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-2 sm:mt-3">
-            <table className="w-full text-[8px] sm:text-xs">
+          <div className="mt-2 sm:mt-3 min-w-0">
+            <table className="w-full table-fixed border-collapse text-[9px] sm:text-xs tabular-nums">
+              <colgroup>
+                <col style={{ width: "26%" }} />
+                <col />
+                <col className="hidden sm:table-column" style={{ width: "26%" }} />
+                <col />
+              </colgroup>
               <thead>
                 <tr className="text-left text-gray-400 border-b border-borderColor">
-                  <th className="py-1.5 sm:py-2 font-medium">Segment</th>
-                  <th className="py-1.5 sm:py-2 font-medium text-right">Current</th>
-                  <th className="py-1.5 sm:py-2 font-medium text-right hidden sm:table-cell">Invested</th>
-                  <th className="py-1.5 sm:py-2 font-medium text-right">P&L</th>
+                  <th className="py-1.5 sm:py-2 pr-1 font-medium">Segment</th>
+                  <th className="py-1.5 sm:py-2 px-0.5 font-medium text-right">Current</th>
+                  <th className="py-1.5 sm:py-2 px-0.5 font-medium text-right hidden sm:table-cell">Invested</th>
+                  <th className="py-1.5 sm:py-2 pl-0.5 font-medium text-right">P&L</th>
                 </tr>
               </thead>
               <tbody>
-                {allocationData.map((entry, index) => (
+                {allocationData.map((entry, index) => {
+                  const currentStr = `₹${formatNumber(entry.current.toFixed(0))}`;
+                  const investedStr = `₹${formatNumber(entry.invested.toFixed(2))}`;
+                  const pnlStr = `${entry.pnl >= 0 ? "+" : ""}₹${formatNumber(entry.pnl.toFixed(2))}`;
+                  return (
                   <tr key={`${entry.name}-${index}`} className="border-b border-borderColor/60">
-                    <td className="py-1.5 sm:py-2 text-gray-300">
-                      <span className="inline-flex items-center gap-1 sm:gap-2">
+                    <td className="py-1.5 sm:py-2 pr-1 text-gray-300 align-middle min-w-0">
+                      <span className="inline-flex items-center gap-1 sm:gap-2 min-w-0 max-w-full">
                         <span
                           className="inline-block h-1.5 w-1.5 sm:h-2.5 sm:w-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: entry.color }}
                         />
-                        <span className="truncate">{entry.name}</span>
+                        <span className="truncate min-w-0">{entry.name}</span>
                       </span>
                     </td>
                     <td
-                      className="py-1.5 sm:py-2 text-right text-gray-200 text-[8px] sm:text-[13.5px]"
+                      className="py-1.5 sm:py-2 px-0.5 text-right text-gray-200 text-[8px] sm:text-[13px] leading-tight align-middle min-w-0"
                       style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                      title={currentStr}
                     >
-                      ₹{formatNumber(entry.current.toFixed(0))}
+                      <span className="block w-full truncate text-right">{currentStr}</span>
                     </td>
                     <td
-                      className="py-1.5 sm:py-2 text-right text-gray-200 text-[8px] sm:text-[13.5px] hidden sm:table-cell"
+                      className="py-1.5 sm:py-2 px-0.5 text-right text-gray-200 text-[8px] sm:text-[13px] leading-tight hidden sm:table-cell align-middle min-w-0"
                       style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                      title={investedStr}
                     >
-                      ₹ {formatNumber(entry.invested.toFixed(2))}
+                      <span className="block w-full truncate text-right">{investedStr}</span>
                     </td>
                     <td
-                      className={`py-2 text-right ${
+                      className={`py-1.5 sm:py-2 pl-0.5 text-right text-[8px] sm:text-[13px] leading-tight align-middle min-w-0 ${
                         entry.pnl > 0
                           ? "text-green-400"
                           : entry.pnl < 0
                           ? "text-red-400"
                           : "text-gray-300"
                       }`}
+                      title={pnlStr}
                     >
-                      {entry.pnl >= 0 ? "+" : ""}₹ {formatNumber(entry.pnl.toFixed(2))}
+                      <span className="block w-full truncate text-right">{pnlStr}</span>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -486,17 +486,18 @@ const sections = [
 function AccordionItem({ section, isOpen, onToggle }) {
   const Icon = section.icon;
   return (
-    <div className="border border-borderColor rounded-xl overflow-hidden">
+    <div className="border border-borderColor rounded-lg sm:rounded-xl overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-6 py-5 bg-cardBg hover:bg-white/5 transition text-left"
+        type="button"
+        className="w-full flex items-center justify-between gap-2 px-3 py-3.5 sm:px-6 sm:py-5 bg-cardBg hover:bg-white/5 transition text-left"
       >
-        <div className="flex items-center gap-3">
-          <Icon size={20} className={section.color} />
-          <span className="text-white font-semibold text-lg">{section.title}</span>
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <Icon className={`w-[18px] h-[18px] sm:w-5 sm:h-5 shrink-0 ${section.color}`} strokeWidth={2} />
+          <span className="text-white font-semibold text-sm sm:text-lg leading-snug">{section.title}</span>
         </div>
-        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-          <ChevronDown size={18} className="text-gray-400" />
+        <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0">
+          <ChevronDown className="w-4 h-4 sm:w-[18px] sm:h-[18px] text-gray-400" />
         </motion.div>
       </button>
 
@@ -510,7 +511,7 @@ function AccordionItem({ section, isOpen, onToggle }) {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="px-6 pb-6 pt-2 bg-primaryBg border-t border-borderColor">
+            <div className="px-3 pb-4 pt-2 sm:px-6 sm:pb-6 bg-primaryBg border-t border-borderColor overflow-x-auto text-sm sm:text-base">
               {section.content}
             </div>
           </motion.div>
@@ -526,92 +527,110 @@ function Documentation() {
   const toggle = (id) => setOpenId((prev) => (prev === id ? null : id));
 
   return (
-    <div className="bg-primaryBg text-textPrimary min-h-screen">
+    <div className="bg-primaryBg text-textPrimary min-h-screen max-w-full overflow-x-hidden">
 
       {/* Navbar */}
-      <nav className="w-full border-b border-borderColor bg-primaryBg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
-          <Link to="/" className="flex items-center gap-3">
-            <img src={logo} alt="FahadTradeX" className="h-10 w-auto" />
-            <span className="text-xl font-bold text-accent">FahadTradeX</span>
+      <nav className="w-full border-b border-borderColor bg-primaryBg/95 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4 px-3 py-2.5 sm:px-6 sm:py-4">
+          <Link to="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <img src={logo} alt="FahadTradeX" className="h-7 w-auto sm:h-10 shrink-0" />
+            <span className="text-base sm:text-xl font-bold text-accent truncate leading-tight">
+              FahadTradeX
+            </span>
           </Link>
           <Link
             to="/"
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-borderColor hover:border-accent transition text-sm"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-borderColor hover:border-accent active:scale-[0.98] transition text-[11px] sm:text-sm shrink-0"
+            aria-label="Back to Home"
           >
-            <ArrowLeft size={14} />
-            Back to Home
+            <ArrowLeft size={14} className="shrink-0 sm:w-[14px] sm:h-[14px]" />
+            <span className="hidden min-[380px]:inline">Back to Home</span>
+            <span className="min-[380px]:hidden">Back</span>
           </Link>
         </div>
       </nav>
 
-      {/* Hero */}
-      <div className="max-w-4xl mx-auto px-6 py-16 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <span className="inline-block text-xs font-semibold tracking-widest uppercase text-accent border border-accent/30 bg-accent/10 px-4 py-1.5 rounded-full mb-6">
-            Platform Documentation
-          </span>
-          <h1 className="text-4xl md:text-5xl font-bold mb-5 leading-tight">
-            Everything inside{" "}
-            <span className="text-accent">FahadTradeX</span>
-          </h1>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            A complete reference for the trading engine, real-time infrastructure, AI systems,
-            database architecture, and UI design powering the platform.
+      {/* Main layout: sidebar + content */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 pb-16 sm:pb-24 flex flex-col lg:flex-row gap-5 sm:gap-8 lg:items-start lg:gap-10">
+
+        {/* Sidebar — section nav */}
+        <aside className="w-full lg:w-[260px] shrink-0 sticky top-14 sm:top-[4.75rem] lg:top-24 z-30 -mx-3 px-3 sm:mx-0 sm:px-0 bg-primaryBg/95 lg:bg-transparent backdrop-blur-md lg:backdrop-blur-none border-b border-borderColor lg:border-b-0 pb-3 sm:pb-0 lg:border-0">
+          <p className="text-[9px] sm:text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2 sm:mb-3 px-0.5 sm:px-1">
+            On this page
           </p>
-        </motion.div>
-      </div>
+          <nav className="flex flex-row lg:flex-col gap-1 sm:gap-1.5 overflow-x-auto lg:overflow-x-visible pb-0.5 lg:pb-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:border-r lg:border-borderColor lg:pr-4 touch-pan-x">
+            {sections.map((s) => {
+              const Icon = s.icon;
+              const active = openId === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setOpenId(s.id)}
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2 py-1.5 sm:px-3 sm:py-2 rounded-md sm:rounded-lg text-left text-[11px] sm:text-sm transition border shrink-0 lg:shrink lg:w-full ${
+                    active
+                      ? "bg-accent text-black border-accent font-semibold shadow-[0_0_0_1px_rgba(var(--color-accent-rgb),0.2)]"
+                      : "border-borderColor text-gray-400 hover:border-accent/50 hover:text-white bg-cardBg/60 lg:bg-transparent"
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${active ? "text-black" : s.color}`} strokeWidth={2} />
+                  <span className="whitespace-nowrap lg:whitespace-normal lg:leading-snug">{s.title}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-      {/* Quick nav */}
-      <div className="max-w-4xl mx-auto px-6 mb-10">
-        <div className="flex flex-wrap gap-2">
-          {sections.map((s) => {
-            const Icon = s.icon;
-            return (
-              <button
-                key={s.id}
-                onClick={() => setOpenId(s.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition border ${
-                  openId === s.id
-                    ? "bg-accent text-black border-accent font-semibold"
-                    : "border-borderColor text-gray-400 hover:border-accent hover:text-white"
-                }`}
+        {/* Content column */}
+        <main className="flex-1 min-w-0 space-y-6 sm:space-y-10 lg:space-y-12">
+
+          {/* Hero */}
+          <div className="text-center lg:text-left pt-1 sm:pt-2 lg:pt-0 px-0.5">
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <span className="inline-block text-[10px] sm:text-xs font-semibold tracking-widest uppercase text-accent border border-accent/30 bg-accent/10 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full mb-4 sm:mb-6">
+                Platform Documentation
+              </span>
+              <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-5 leading-tight px-0.5">
+                Everything inside{" "}
+                <span className="text-accent">FahadTradeX</span>
+              </h1>
+              <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+                A complete reference for the trading engine, real-time infrastructure, AI systems,
+                database architecture, and UI design powering the platform.
+              </p>
+            </motion.div>
+          </div>
+
+          {/* Accordion */}
+          <div className="space-y-3">
+            {sections.map((section, i) => (
+              <motion.div
+                key={section.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05, duration: 0.4 }}
               >
-                <Icon size={13} />
-                {s.title.split(" ").slice(0, 2).join(" ")}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+                <AccordionItem
+                  section={section}
+                  isOpen={openId === section.id}
+                  onToggle={() => toggle(section.id)}
+                />
+              </motion.div>
+            ))}
+          </div>
 
-      {/* Accordion */}
-      <div className="max-w-4xl mx-auto px-6 pb-24 space-y-3">
-        {sections.map((section, i) => (
-          <motion.div
-            key={section.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05, duration: 0.4 }}
-          >
-            <AccordionItem
-              section={section}
-              isOpen={openId === section.id}
-              onToggle={() => toggle(section.id)}
-            />
-          </motion.div>
-        ))}
+        </main>
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-borderColor py-8 px-6 text-center">
-        <p className="text-gray-500 text-sm">
+      <footer className="border-t border-borderColor py-6 sm:py-8 px-4 sm:px-6 text-center">
+        <p className="text-gray-500 text-[11px] sm:text-sm leading-relaxed max-w-md mx-auto">
           © {new Date().getFullYear()} FahadTradeX · Built by Fahad ·{" "}
-          <Link to="/" className="hover:text-accent transition">Back to Home</Link>
+          <Link to="/" className="hover:text-accent transition whitespace-nowrap">Back to Home</Link>
         </p>
       </footer>
 

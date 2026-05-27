@@ -4,7 +4,8 @@ import {
 } from "firebase/auth";
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 import logo from "../../assets/images/FahadTradeX.png";
 import stockVideo from "../../assets/videos/stock-bg.webm";
@@ -127,7 +128,20 @@ function Signup() {
   };
 
   return (
-    <div className="min-h-screen flex bg-primaryBg text-textPrimary">
+    <div className="min-h-screen flex bg-primaryBg text-textPrimary overflow-hidden">
+
+      <Link
+        to="/"
+        className="group fixed top-3 left-3 sm:top-5 sm:left-5 z-[100] inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-[#080810]/75 px-2 py-1.5 sm:px-3 sm:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-all duration-200 hover:border-accent/45 hover:bg-accent/10 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_0_1px_rgba(var(--color-accent-rgb),0.12)] active:scale-[0.98]"
+        aria-label="Back to home"
+      >
+        <span className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-white/[0.08] border border-white/10 text-white group-hover:border-accent/35 group-hover:bg-accent/15 group-hover:text-accent transition-colors">
+          <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.25} />
+        </span>
+        <span className="pr-0.5 sm:pr-1 text-[10px] sm:text-sm font-semibold tracking-wide text-white/90 group-hover:text-accent transition-colors whitespace-nowrap">
+          Back to Home
+        </span>
+      </Link>
 
       {/* LEFT SIDE */}
       <div className="hidden lg:flex w-1/2 relative items-center justify-center overflow-hidden">

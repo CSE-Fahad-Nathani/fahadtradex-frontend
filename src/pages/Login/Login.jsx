@@ -11,7 +11,10 @@ import {
 import { auth } from "../../services/firebase";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { TrendingUp, Zap, Cpu, ShieldCheck, Eye, EyeOff, ArrowRight, Info, X } from "lucide-react";
+import { TrendingUp, Zap, Cpu, ShieldCheck, Eye, EyeOff, ArrowRight, ArrowLeft, Info, X, Copy } from "lucide-react";
+
+const DEMO_EMAIL = "fewatav994@codoteam.com";
+const DEMO_PASSWORD = "123456";
 
 const pills = [
   { icon: TrendingUp, label: "Live Trading Engine" },
@@ -29,7 +32,14 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
   const [showDemoInfo, setShowDemoInfo] = useState(false);
   const navigate = useNavigate();
 
-
+  const copyDemoField = async (value, label) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast("success", `${label} copied to clipboard`);
+    } catch {
+      showToast("error", "Could not copy to clipboard");
+    }
+  };
 
   const handleLogin = async () => {
 
@@ -207,6 +217,19 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
   return (
     <div className="min-h-screen flex bg-primaryBg text-textPrimary overflow-hidden">
 
+      <Link
+        to="/"
+        className="group fixed top-3 left-3 sm:top-5 sm:left-5 z-[100] inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-[#080810]/75 px-2 py-1.5 sm:px-3 sm:py-2 shadow-[0_8px_32px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-all duration-200 hover:border-accent/45 hover:bg-accent/10 hover:shadow-[0_12px_40px_rgba(0,0,0,0.5),0_0_0_1px_rgba(var(--color-accent-rgb),0.12)] active:scale-[0.98]"
+        aria-label="Back to home"
+      >
+        <span className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-xl bg-white/[0.08] border border-white/10 text-white group-hover:border-accent/35 group-hover:bg-accent/15 group-hover:text-accent transition-colors">
+          <ArrowLeft size={16} className="sm:w-[18px] sm:h-[18px]" strokeWidth={2.25} />
+        </span>
+        <span className="pr-0.5 sm:pr-1 text-[10px] sm:text-sm font-semibold tracking-wide text-white/90 group-hover:text-accent transition-colors whitespace-nowrap">
+          Back to Home
+        </span>
+      </Link>
+
       {/* ── LEFT PANEL — 70% ── */}
       <div className="hidden lg:flex w-[70%] relative flex-col items-center justify-center overflow-hidden">
 
@@ -333,12 +356,24 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
                 <label className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.18em] text-gray-500">
                   Email Address
                 </label>
-                <div className="relative">
+                <div className="relative flex items-center gap-2 shrink-0">
                   <Info size={18} className="text-accent/70 cursor-pointer hover:text-accent transition" onClick={() => setShowDemoInfo((v) => !v)} />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail(DEMO_EMAIL);
+                      setPassword(DEMO_PASSWORD);
+                    }}
+                    className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-accent px-2 py-1 rounded-md border border-accent/45 bg-accent/10 hover:bg-accent/20 hover:border-accent/70 transition"
+                    title="Fill demo email and password"
+                    aria-label="AutoFill demo email and password"
+                  >
+                    AutoFill
+                  </button>
                   {showDemoInfo && (
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => setShowDemoInfo(false)} />
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-56 z-50">
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-[min(17rem,calc(100vw-2rem))] z-50">
                         <div
                           className="rounded-xl p-4 text-left relative"
                           style={{
@@ -348,20 +383,55 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
                           }}
                         >
                           <button
+                            type="button"
                             onClick={() => setShowDemoInfo(false)}
                             className="absolute top-2.5 right-2.5 text-gray-500 hover:text-white transition"
                           >
                             <X size={14} />
                           </button>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent mb-2.5">Demo Credentials</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent mb-2.5 pr-7">
+                            Demo Credentials
+                          </p>
                           <div className="space-y-1.5">
                             <div>
                               <span className="text-[10px] text-gray-500 uppercase tracking-wider">Email</span>
-                              <p className="text-[12px] text-white font-medium">fewatav994@codoteam.com</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <p className="text-[12px] text-white font-medium break-all min-w-0 flex-1">
+                                  {DEMO_EMAIL}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    copyDemoField(DEMO_EMAIL, "Email");
+                                  }}
+                                  className="shrink-0 inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-white/15 text-[9px] font-bold uppercase tracking-wider text-white/80 hover:text-accent hover:border-accent/50 transition"
+                                  title="Copy email"
+                                  aria-label="Copy demo email"
+                                >
+                                  <Copy size={11} className="opacity-80" />
+                                  Copy
+                                </button>
+                              </div>
                             </div>
                             <div>
                               <span className="text-[10px] text-gray-500 uppercase tracking-wider">Password</span>
-                              <p className="text-[12px] text-white font-medium">123456</p>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <p className="text-[12px] text-white font-medium min-w-0 flex-1">{DEMO_PASSWORD}</p>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    copyDemoField(DEMO_PASSWORD, "Password");
+                                  }}
+                                  className="shrink-0 inline-flex items-center gap-1 px-1.5 py-1 rounded-md border border-white/15 text-[9px] font-bold uppercase tracking-wider text-white/80 hover:text-accent hover:border-accent/50 transition"
+                                  title="Copy password"
+                                  aria-label="Copy demo password"
+                                >
+                                  <Copy size={11} className="opacity-80" />
+                                  Copy
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -474,9 +544,6 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
                 Sign up free
               </Link>
             </p>
-            <Link to="/" className="block text-[10px] sm:text-xs text-white/70 hover:text-accent transition">
-              ← Back to Home
-            </Link>
           </div>
 
         </motion.div>
