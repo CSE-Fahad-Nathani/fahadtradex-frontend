@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { Search } from "lucide-react";
 import { useToast } from "../../components/common/Toast/ToastContext";
 import useMarketFeed from "../../hooks/useMarketFeed";
 import { FiEye, FiTrash2 } from "react-icons/fi";
@@ -34,7 +34,12 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
   const { showToast } = useToast();
 
   const staticTabs = ["Top Growth", "Nifty50"];
+  const PAGE_SIZES = [5, 10, 20, 50, 100];
   const liveData = useMarketStore((s) => s.data);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(()=>{
     console.log("selectedStock",selectedStock)
@@ -94,8 +99,36 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
 
   // 🔥 Current data
   const currentData = watchlists[activeTab] || [];
-  // console.log("🟡 Active Tab:", activeTab);
-  // console.log("🟡 Current Data:", currentData);
+
+  const filteredData = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return currentData;
+    return currentData.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(q) ||
+        item.symbol?.toLowerCase().includes(q)
+    );
+  }, [currentData, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / pageSize) || 1);
+
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredData.slice(start, start + pageSize);
+  }, [filteredData, currentPage, pageSize]);
+
+  useEffect(() => {
+    setSearchQuery("");
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, pageSize]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
 
   // ✅ Prepare scrips for WS
   const scrips =
@@ -259,15 +292,30 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
         </div>
       </div>
 
-      {/* ── Section Label ── */}
-      <div className="flex items-center gap-2 sm:gap-3">
-        <h2
-          className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-[1.5px] shrink-0"
-          style={{ color: "#5a5f78" }}
-        >
-          {activeTab} — Value Over Time
-        </h2>
-        <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.04)" }} />
+      {/* ── Section Label + Mobile Search ── */}
+      <div className="flex flex-col gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <h2
+            className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-[1.5px] shrink-0"
+            style={{ color: "#5a5f78" }}
+          >
+            {activeTab} — Value Over Time
+          </h2>
+          <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.04)" }} />
+        </div>
+        {!staticTabs.includes(activeTab) && (
+          <div className="sm:hidden relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#5a5f78" }} />
+            <input
+              type="text"
+              placeholder="Search by name or symbol..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 text-[11px] rounded-lg outline-none"
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#f0f2f8" }}
+            />
+          </div>
+        )}
       </div>
   
       {/* ── Mobile Card Layout ── */}
@@ -290,7 +338,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
             </div>
           )}
 
-          {!staticTabs.includes(activeTab) && !loading && currentData.map((item, i) => {
+          {!staticTabs.includes(activeTab) && !loading && paginatedData.map((item, i) => {
             const token = String(item.scripCode);
             const live = liveData[token];
             const initialPrice = Number(item.initialPrice);
@@ -428,9 +476,58 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
             );
           })}
 
-          {!staticTabs.includes(activeTab) && !loading && currentData.length === 0 && (
+          {!staticTabs.includes(activeTab) && !loading && filteredData.length === 0 && (
             <div className="p-10 text-center rounded-xl border border-borderColor bg-cardBg">
-              <p className="text-[10px] font-medium" style={{ color: "#5a5f78" }}>No stocks in this watchlist</p>
+              <p className="text-[10px] font-medium" style={{ color: "#5a5f78" }}>
+                {searchQuery.trim() ? "No stocks match your search" : "No stocks in this watchlist"}
+              </p>
+            </div>
+          )}
+
+          {!staticTabs.includes(activeTab) && !loading && filteredData.length > 0 && (
+            <div className="flex flex-col gap-2 pt-2 pb-1 px-0.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[9px]" style={{ color: "#5a5f78" }}>
+                  {filteredData.length === 0
+                    ? "0 results"
+                    : `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, filteredData.length)} of ${filteredData.length}`}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="px-2 py-1 text-[9px] rounded-md border disabled:opacity-40"
+                    style={{ borderColor: "rgba(255,255,255,0.08)", color: "#9ca3af" }}
+                  >
+                    Prev
+                  </button>
+                  <span className="text-[9px] px-1" style={{ color: "#5a5f78" }}>{currentPage}/{totalPages}</span>
+                  <button
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className="px-2 py-1 text-[9px] rounded-md border disabled:opacity-40"
+                    style={{ borderColor: "rgba(255,255,255,0.08)", color: "#9ca3af" }}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {PAGE_SIZES.map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setPageSize(size)}
+                    className="px-2 py-0.5 text-[9px] rounded-md border transition-colors"
+                    style={
+                      pageSize === size
+                        ? { background: "rgba(124,111,255,0.15)", color: "#7c6fff", border: "1px solid rgba(124,111,255,0.3)" }
+                        : { background: "transparent", color: "#5a5f78", border: "1px solid rgba(255,255,255,0.08)" }
+                    }
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -443,10 +540,46 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
       >
         <div className="min-w-[900px]">
 
+          {/* Search toolbar */}
+          {!staticTabs.includes(activeTab) && (
+            <div
+              className="flex items-center justify-between gap-3 px-5 py-3 border-b border-borderColor bg-[var(--color-surface-subtle)]"
+            >
+              <div className="relative flex-1 max-w-md">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#5a5f78" }} />
+                <input
+                  type="text"
+                  placeholder="Search by name or symbol..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-[12px] rounded-lg outline-none focus:border-[rgba(124,111,255,0.4)] transition-colors"
+                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#f0f2f8" }}
+                />
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[10px] font-medium mr-1" style={{ color: "#5a5f78" }}>Rows:</span>
+                {PAGE_SIZES.map((size) => (
+                  <button
+                    key={size}
+                    onClick={() => setPageSize(size)}
+                    className="px-2.5 py-1 text-[10px] font-semibold rounded-md border transition-colors"
+                    style={
+                      pageSize === size
+                        ? { background: "rgba(124,111,255,0.15)", color: "#7c6fff", border: "1px solid rgba(124,111,255,0.3)" }
+                        : { background: "transparent", color: "#5a5f78", border: "1px solid rgba(255,255,255,0.08)" }
+                    }
+                  >
+                    {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div
-            className="grid px-5 py-3 border-b border-borderColor"
-            style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1fr 1fr", background: "rgba(255,255,255,0.02)" }}
+            className="grid px-5 py-3 border-b border-borderColor bg-[var(--color-surface-subtle)]"
+            style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1fr 1fr" }}
           >
             {[
               { main: "Name", left: true },
@@ -470,7 +603,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
           </div>
 
           {/* Body */}
-          <div style={{ maxHeight: "65vh", overflow: "auto" }}>
+          <div style={{ maxHeight: "55vh", overflow: "auto" }}>
             {staticTabs.includes(activeTab) && (
               <div className="p-12 text-center text-[13px]" style={{ color: "#5a5f78" }}>{activeTab} data coming soon...</div>
             )}
@@ -495,7 +628,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
             )}
 
             {!staticTabs.includes(activeTab) && !loading &&
-              currentData.map((item, i) => {
+              paginatedData.map((item, i) => {
                 const token = String(item.scripCode);
                 const live = liveData[token];
                 const initialPrice = Number(item.initialPrice);
@@ -556,10 +689,45 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                 );
               })}
 
-            {!staticTabs.includes(activeTab) && !loading && currentData.length === 0 && (
-              <div className="p-12 text-center text-[13px]" style={{ color: "#5a5f78" }}>No stocks in this watchlist</div>
+            {!staticTabs.includes(activeTab) && !loading && filteredData.length === 0 && (
+              <div className="p-12 text-center text-[13px]" style={{ color: "#5a5f78" }}>
+                {searchQuery.trim() ? "No stocks match your search" : "No stocks in this watchlist"}
+              </div>
             )}
           </div>
+
+          {/* Pagination footer */}
+          {!staticTabs.includes(activeTab) && !loading && filteredData.length > 0 && (
+            <div
+              className="flex items-center justify-between px-5 py-3 border-t border-borderColor"
+              className="bg-[var(--color-surface-subtle)]"
+            >
+              <span className="text-[11px]" style={{ color: "#5a5f78" }}>
+                Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredData.length)} of {filteredData.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1 text-[11px] font-semibold rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:text-slate-300"
+                  style={{ borderColor: "rgba(255,255,255,0.08)", color: "#9ca3af" }}
+                >
+                  Previous
+                </button>
+                <span className="text-[11px] font-medium min-w-[72px] text-center" style={{ color: "#5a5f78" }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="px-3 py-1 text-[11px] font-semibold rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:text-slate-300"
+                  style={{ borderColor: "rgba(255,255,255,0.08)", color: "#9ca3af" }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
   

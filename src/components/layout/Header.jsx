@@ -6,6 +6,7 @@ import SearchDropdown from "../search/SearchDropdown";
 import { useState, useRef, useEffect } from "react";
 import { formatNumber } from "../../utils/formatNumber";
 import MarketStatusIndicator from "../common/MarketStatusIndicator";
+import ThemeToggle from "../common/ThemeToggle";
 
 function Header( {triggerWatchlistUpdate, setTriggerWatchlistUpdate, triggerPositionUpdate, setTriggerPositionUpdate}) {
   const location = useLocation();
@@ -16,7 +17,11 @@ function Header( {triggerWatchlistUpdate, setTriggerWatchlistUpdate, triggerPosi
 
   const getTitle = () => {
     if (location.pathname.includes("watchlist")) return "Watchlist";
+    if (location.pathname.includes("portfolio")) return "Portfolio";
     if (location.pathname.includes("position")) return "Positions";
+    if (location.pathname.includes("orderHistory")) return "Order History";
+    if (location.pathname.includes("orders")) return "Orders";
+    if (location.pathname.includes("stock")) return "Stock";
     return "Dashboard";
   };
 
@@ -45,10 +50,10 @@ useEffect(() => {
 
 
   return (
-    <div className="h-11 sm:h-16 border-b border-[#1F2937] flex items-center justify-between px-2.5 sm:px-6 bg-[#0B0F19] gap-2 sm:gap-4">
+    <div className="h-11 sm:h-16 border-b border-borderColor flex items-center justify-between px-2.5 sm:px-6 bg-primaryBg gap-2 sm:gap-4">
 
       {/* LEFT */}
-      <h1 className="text-xs sm:text-lg font-semibold tracking-wide shrink-0">
+      <h1 className="text-xs sm:text-lg font-semibold tracking-wide shrink-0 text-textPrimary">
         {getTitle()}
       </h1>
 
@@ -58,15 +63,15 @@ useEffect(() => {
         whileFocusWithin={{ scale: 1.02 }}
         className="flex-1 max-w-xl relative"
       >
-        <div className="flex items-center gap-2 sm:gap-3 bg-[#111827] border border-[#1F2937] rounded-lg sm:rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2">
-          <Search size={14} className="text-gray-400 shrink-0 sm:w-[18px] sm:h-[18px]" />
+        <div className="flex items-center gap-2 sm:gap-3 bg-cardBg border border-borderColor rounded-lg sm:rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2">
+          <Search size={14} className="text-textMuted shrink-0 sm:w-[18px] sm:h-[18px]" />
           <input
             type="text"
             placeholder="Search stocks..."
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             onFocus={() => setShowDropdown(true)}
-            className="w-full bg-transparent outline-none text-[10px] sm:text-sm"
+            className="w-full bg-transparent outline-none text-[10px] sm:text-sm text-textPrimary placeholder:text-textMuted"
           />
         </div>
 
@@ -77,13 +82,14 @@ useEffect(() => {
 
       {/* RIGHT */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+        {/* <ThemeToggle /> */}
         <div className="hidden sm:block">
           <MarketStatusIndicator />
         </div>
 
         <div className="text-right">
-          <p className="text-[8px] sm:text-xs text-gray-400 hidden sm:block">Available Margin</p>
-          <p className="text-[#00FFA3] font-semibold text-[11px] sm:text-lg">
+          <p className="text-[8px] sm:text-xs text-textMuted hidden sm:block">Available Margin</p>
+          <p className="text-accent font-semibold text-[11px] sm:text-lg">
             ₹ {formatNumber(user?.balance)}
           </p>
         </div>

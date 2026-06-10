@@ -176,15 +176,8 @@ function Portfolio() {
               return (
                 <div
                   key={i}
-                  className="relative overflow-hidden rounded-xl sm:rounded-[20px] border border-borderColor transition-all duration-200 hover:-translate-y-1 px-2.5 py-2 sm:p-[20px_22px_18px]"
-                  style={{
-                    background: "linear-gradient(145deg, #0d0f18 0%, #0a0c13 100%)",
-                    borderColor: "rgba(255,255,255,0.07)",
-                  }}
+                  className="relative overflow-hidden rounded-xl sm:rounded-[20px] border border-borderColor bg-cardBg transition-all duration-200 hover:-translate-y-1 px-2.5 py-2 sm:p-[20px_22px_18px]"
                 >
-                  <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at top right, ${card.glowColor} 0%, transparent 65%)` }} />
-                  <div className="absolute top-0 left-4 right-4 sm:left-6 sm:right-6 h-[1px]" style={{ background: `linear-gradient(90deg, transparent, ${card.accentColor}60, transparent)` }} />
-
                   <div className="relative flex items-center justify-between mb-1 sm:mb-4">
                     <p className="text-[7px] sm:text-[11px] font-semibold uppercase tracking-[1.4px]" style={{ color: "#5a5f78" }}>{card.label}</p>
                     <div className="flex items-center justify-center w-5 h-5 sm:w-9 sm:h-9 rounded-md sm:rounded-xl shrink-0" style={{ background: card.iconBg, border: `1px solid ${card.iconColor}25` }}>
@@ -205,8 +198,6 @@ function Portfolio() {
                       </span>
                     )}
                   </div>
-
-                  <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${card.accentColor}50, transparent)` }} />
                 </div>
               );
             })}
@@ -334,7 +325,7 @@ function Portfolio() {
       <div className="hidden sm:block rounded-[20px] border border-borderColor overflow-hidden bg-cardBg overflow-x-auto">
         <div className="min-w-[900px]">
 
-          <div className="grid px-5 py-3 border-b border-borderColor text-center" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1.3fr 1.2fr", background: "rgba(255,255,255,0.02)" }}>
+          <div className="grid px-5 py-3 border-b border-borderColor text-center bg-[var(--color-surface-subtle)]" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1.3fr 1.2fr" }}>
             {[
               { main: "Name", sub: null, left: true },
               { main: "LTP", sub: "Change (%)" },
@@ -350,7 +341,7 @@ function Portfolio() {
             ))}
           </div>
 
-          <div style={{ maxHeight: "45vh", overflow: "auto" }}>
+          <div style={{ maxHeight: "40vh", overflow: "auto" }}>
             {loading && (
               <div className="animate-pulse">
                 {[...Array(6)].map((_, i) => (

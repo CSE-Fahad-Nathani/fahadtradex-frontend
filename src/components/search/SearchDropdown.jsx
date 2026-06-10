@@ -140,18 +140,18 @@ useMarketFeed({
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="absolute top-9 sm:top-12 left-0 w-full bg-[#111827] border border-[#1F2937] rounded-lg sm:rounded-xl overflow-hidden z-50"
+      className="absolute top-9 sm:top-12 left-0 w-full bg-cardBg border border-borderColor rounded-lg sm:rounded-xl overflow-hidden z-50 shadow-xl"
     >
       {/* Tabs */}
-      <div className="flex gap-1 sm:gap-2 p-2 sm:p-3 border-b border-[#1F2937]">
+      <div className="flex gap-1 sm:gap-2 p-2 sm:p-3 border-b border-borderColor">
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${
               activeTab === tab
-                ? "bg-[#00FFA3] text-black"
-                : "text-gray-400 hover:text-white"
+                ? "bg-accent text-black"
+                : "text-textMuted hover:text-textPrimary"
             }`}
           >
             {tab}
@@ -160,7 +160,7 @@ useMarketFeed({
       </div>
 
       {/* Desktop Header */}
-      <div className="hidden sm:grid grid-cols-3 text-xs text-gray-400 px-4 py-2 border-b border-[#1F2937]">
+      <div className="hidden sm:grid grid-cols-3 text-xs text-textMuted px-4 py-2 border-b border-borderColor bg-[var(--color-surface-subtle)]">
         <span>Name</span>
         <span style={{ textAlign: "center" }}>Price</span>
         <span style={{ textAlign: "center" }}>Change</span>
@@ -183,7 +183,7 @@ useMarketFeed({
           const exchLabel = item.exchange === "N" ? "NSE" : item.exchange === "B" ? "BSE" : "MCX";
 
           return (
-            <div key={item.id} className="border-b border-[#1F2937]">
+            <div key={item.id} className="border-b border-borderColor">
               {/* ── Mobile Row ── */}
               <div className="sm:hidden px-2.5 py-2">
                 <div className="flex items-start justify-between mb-1">
@@ -221,10 +221,10 @@ useMarketFeed({
               </div>
 
               {/* ── Desktop Row ── */}
-              <div className="hidden sm:grid relative group grid-cols-3 px-4 py-3 hover:bg-[#0B0F19] transition">
+              <div className="hidden sm:grid relative group grid-cols-3 px-4 py-3 hover:bg-[var(--color-row-hover)] transition text-textPrimary">
                 <div>
                   <p className="text-sm font-medium">{item.name}</p>
-                  <p className="text-xs text-gray-400">{exchLabel} • {item.symbol}</p>
+                  <p className="text-xs text-textMuted">{exchLabel} • {item.symbol}</p>
                 </div>
 
                 <div className="text-sm text-center font-mono">
@@ -238,7 +238,7 @@ useMarketFeed({
                 <div className="absolute inset-0 flex items-center justify-end pr-4 gap-2 opacity-0 group-hover:opacity-100 transition">
                   <button onClick={() => { setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }} className="px-2 py-1 text-xs bg-[#22C55E] text-black rounded">Buy</button>
                   <button onClick={() => { setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }} className="px-2 py-1 text-xs bg-[#FF4D4F] text-white rounded">Sell</button>
-                  <button onClick={() => handleAddToWatchlist(item)} disabled={addingId === item.id} className="px-2 py-1 text-xs bg-[#1F2937] rounded disabled:opacity-50">
+                  <button onClick={() => handleAddToWatchlist(item)} disabled={addingId === item.id} className="px-2 py-1 text-xs bg-cardBg border border-borderColor text-textMuted rounded disabled:opacity-50">
                     {addingId === item.id ? "Adding..." : "+ Add to Watchlist"}
                   </button>
                 </div>

@@ -6,7 +6,7 @@ import bg from "../../assets/images/BackgroundImg.png";
 
 function MainLayout( {triggerWatchlistUpdate, setTriggerWatchlistUpdate, triggerPositionUpdate, setTriggerPositionUpdate}) {
   return (
-    <div className="flex h-screen bg-[#0B0F19] text-[#F9FAFB]">
+    <div className="flex h-screen bg-primaryBg text-textPrimary">
       <GlobalPnlTracker />
       
       <Sidebar />
@@ -18,7 +18,7 @@ function MainLayout( {triggerWatchlistUpdate, setTriggerWatchlistUpdate, trigger
 
 {/* 🔥 Background Image */}
 <div
-  className="absolute inset-0"
+  className="absolute inset-0 main-bg-image transition-opacity duration-300"
   style={{
     backgroundImage: `url(${bg})`,
     backgroundSize: "cover",
@@ -27,8 +27,10 @@ function MainLayout( {triggerWatchlistUpdate, setTriggerWatchlistUpdate, trigger
   }}
 />
 
-{/* 🔥 Black Overlay */}
-<div className="absolute inset-0 bg-black/90  backdrop-blur-sm" />
+<div
+  className="absolute inset-0 backdrop-blur-sm transition-colors duration-300"
+  style={{ background: "var(--color-overlay)" }}
+/>
 
 {/* 🔥 Content */}
 <div className="relative p-2 sm:p-6 pb-16 md:pb-6">

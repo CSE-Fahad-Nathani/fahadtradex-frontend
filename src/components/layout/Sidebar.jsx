@@ -55,7 +55,7 @@ function Sidebar() {
     <>
       {/* Desktop Sidebar */}
       <div
-        className={`hidden md:flex h-full border-r border-[#1F2937] bg-[#0B0F19] flex-col transition-all duration-300 ${
+        className={`hidden md:flex h-full border-r border-borderColor bg-primaryBg flex-col transition-all duration-300 ${
           expanded ? "w-56" : "w-16"
         }`}
       >
@@ -76,8 +76,8 @@ function Sidebar() {
                 to={item.path}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 p-2 rounded-md transition ${
-                    isActive ? "bg-[#111827] text-[#00FFA3]" : "hover:bg-[#111827]"
+                  `flex items-center gap-3 p-2 rounded-md transition text-textMuted ${
+                    isActive ? "bg-cardBg text-accent" : "hover:bg-cardBg hover:text-textPrimary"
                   }`
                 }
                 title={!expanded ? item.name : ""}
@@ -89,7 +89,7 @@ function Sidebar() {
           })}
         </div>
 
-        <div className="p-3 border-t border-[#1F2937]">
+        <div className="p-3 border-t border-borderColor">
           <button
             onClick={() => setShowLogoutModal(true)}
             style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -102,7 +102,7 @@ function Sidebar() {
       </div>
 
       {/* Mobile Bottom Tab Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-[#1F2937] bg-[#0B0F19]/95 backdrop-blur-xl">
+      <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-borderColor bg-primaryBg/95 backdrop-blur-xl">
         <div className="flex items-center justify-around px-1 py-1.5">
           {mobileMainTabs.map((item) => {
             const Icon = item.icon;
@@ -112,7 +112,7 @@ function Sidebar() {
                 to={item.path}
                 className={({ isActive }) =>
                   `flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors ${
-                    isActive ? "text-[#00FFA3]" : "text-gray-500"
+                    isActive ? "text-accent" : "text-textMuted"
                   }`
                 }
               >
@@ -126,7 +126,7 @@ function Sidebar() {
           <button
             onClick={() => setShowMoreMenu((v) => !v)}
             className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors ${
-              showMoreMenu ? "text-[#00FFA3]" : "text-gray-500"
+              showMoreMenu ? "text-accent" : "text-textMuted"
             }`}
           >
             <MoreHorizontal size={18} />
@@ -139,7 +139,7 @@ function Sidebar() {
           <>
             <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)} />
             <div
-              className="absolute bottom-full left-0 right-0 z-50 border-t border-[#1F2937] bg-[#0B0F19]/95 backdrop-blur-xl px-3 py-2 flex flex-col gap-0.5"
+              className="absolute bottom-full left-0 right-0 z-50 border-t border-borderColor bg-primaryBg/95 backdrop-blur-xl px-3 py-2 flex flex-col gap-0.5"
             >
               {mobileMoreTabs.map((item) => {
                 const Icon = item.icon;
@@ -150,7 +150,7 @@ function Sidebar() {
                     onClick={() => setShowMoreMenu(false)}
                     className={({ isActive }) =>
                       `flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-colors ${
-                        isActive ? "text-[#00FFA3] bg-[#111827]" : "text-gray-400 hover:bg-[#111827]"
+                        isActive ? "text-accent bg-cardBg" : "text-textMuted hover:bg-cardBg"
                       }`
                     }
                   >
@@ -161,7 +161,7 @@ function Sidebar() {
               })}
               <button
                 onClick={() => { setShowMoreMenu(false); setShowLogoutModal(true); }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-red-400 hover:bg-[#111827] transition-colors"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-red-400 hover:bg-cardBg transition-colors"
               >
                 <LogOut size={16} />
                 Logout
@@ -175,15 +175,13 @@ function Sidebar() {
       {showLogoutModal && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
-          style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }}
+          style={{ background: "var(--color-modal-overlay)", backdropFilter: "blur(6px)" }}
           onClick={() => setShowLogoutModal(false)}
         >
           <div
-            className="rounded-xl sm:rounded-2xl p-5 sm:p-7 w-full max-w-[340px] flex flex-col items-center gap-4 sm:gap-5"
+            className="rounded-xl sm:rounded-2xl p-5 sm:p-7 w-full max-w-[340px] flex flex-col items-center gap-4 sm:gap-5 bg-cardBg border border-borderColor"
             style={{
-              background: "linear-gradient(135deg, #141926 0%, #0d1117 100%)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.5)",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.25)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -195,22 +193,17 @@ function Sidebar() {
               <LogOut size={22} className="hidden sm:block" style={{ color: "#ff4d6a" }} />
             </div>
             <div className="text-center">
-              <p className="text-[13px] sm:text-[15px] font-semibold" style={{ color: "#f0f2f8" }}>
+              <p className="text-[13px] sm:text-[15px] font-semibold text-textPrimary">
                 Are you sure?
               </p>
-              <p className="text-[11px] sm:text-[12.5px] mt-1" style={{ color: "#5a5f78" }}>
+              <p className="text-[11px] sm:text-[12.5px] mt-1 text-textMuted">
                 You will be logged out of your account.
               </p>
             </div>
             <div className="flex items-center gap-2.5 sm:gap-3 w-full">
               <button
                 onClick={() => setShowLogoutModal(false)}
-                className="flex-1 py-2 rounded-lg text-[11px] sm:text-[12.5px] font-semibold transition"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#9ca3af",
-                }}
+                className="flex-1 py-2 rounded-lg text-[11px] sm:text-[12.5px] font-semibold transition border border-borderColor text-textMuted hover:bg-[var(--color-row-hover)]"
               >
                 Cancel
               </button>

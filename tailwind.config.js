@@ -7,13 +7,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        primaryBg: "#0B0F19",
-        cardBg: "#111827",
-        accent: "#00FFA3",
+        primaryBg: "var(--color-primary-bg)",
+        cardBg: "var(--color-card-bg)",
+        accent: "var(--color-accent)",
         profit: "#22C55E",
         loss: "#FF4D4F",
-        borderColor: "#1F2937",
-        textPrimary: "#F9FAFB",
+        borderColor: "var(--color-border)",
+        textPrimary: "var(--color-text-primary)",
+        textMuted: "var(--color-text-muted)",
+        textSubtle: "var(--color-text-subtle)",
+        inputBg: "var(--color-input-bg)",
       },
     },
   },

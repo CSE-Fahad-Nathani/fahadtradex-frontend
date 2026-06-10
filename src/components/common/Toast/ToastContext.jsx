@@ -60,10 +60,10 @@ export function ToastProvider({ children }) {
               exit={{ opacity: 0, x: 120 }}
               transition={{ duration: 0.25 }}
               layout
-              className={`relative w-80 rounded-xl border backdrop-blur-lg shadow-2xl
+              className={`relative w-80 rounded-xl border backdrop-blur-lg shadow-2xl bg-cardBg/95
               ${toast.type === "success"
-                  ? "border-green-500/40 bg-[#0B0F19]/80"
-                  : "border-red-500/40 bg-[#0B0F19]/80"
+                  ? "border-green-500/40"
+                  : "border-red-500/40"
               }`}
             >
 
@@ -87,11 +87,11 @@ export function ToastProvider({ children }) {
                 {/* Message */}
                 <div className="flex-1">
 
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-textPrimary">
                     {toast.type === "success" ? "Success" : "Error"}
                   </p>
 
-                  <p className="text-sm text-gray-400 mt-0.5">
+                  <p className="text-sm text-textMuted mt-0.5">
                     {toast.message}
                   </p>
 
@@ -100,7 +100,7 @@ export function ToastProvider({ children }) {
                 {/* Close */}
                 <button
                   onClick={() => removeToast(toast.id)}
-                  className="text-gray-500 hover:text-white transition"
+                  className="text-textMuted hover:text-textPrimary transition"
                 >
                   <X size={16} />
                 </button>

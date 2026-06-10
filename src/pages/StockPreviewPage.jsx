@@ -5,6 +5,7 @@ import { useMarketStore } from "../store/marketStore";
 import { formatNumber } from "../utils/formatNumber";
 import { createChart, CandlestickSeries } from "lightweight-charts";
 import TradeModal from "../components/trading/TradeModal";
+import { useThemeStore } from "../store/themeStore";
 
 const StockPreviewPage = () => {
   const navigate = useNavigate();
@@ -28,15 +29,45 @@ const StockPreviewPage = () => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
   const candleSeriesRef = useRef(null); // 🔥 NEW
+  const theme = useThemeStore((s) => s.theme);
 
-  const today = new Date().toISOString().split("T")[0];
+  const DATE_RANGES = [
+    { id: "1d", label: "1 Day" },
+    { id: "1w", label: "1 Week" },
+    { id: "15d", label: "15 Days" },
+    { id: "1m", label: "1 Month" },
+    { id: "6m", label: "6 Month" },
+  ];
+
+  const getDateRange = (range) => {
+    const to = new Date();
+    const from = new Date();
+    switch (range) {
+      case "1w":
+        from.setDate(from.getDate() - 7);
+        break;
+      case "15d":
+        from.setDate(from.getDate() - 15);
+        break;
+      case "1m":
+        from.setMonth(from.getMonth() - 1);
+        break;
+      case "6m":
+        from.setMonth(from.getMonth() - 6);
+        break;
+      default:
+        break;
+    }
+    const format = (d) => d.toISOString().split("T")[0];
+    return { fromDate: format(from), toDate: format(to) };
+  };
 
   const [snapshot, setSnapshot] = useState(null);
   const [candles, setCandles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [fromDate, setFromDate] = useState(today);
-  const [toDate, setToDate] = useState(today);
+  const [dateRange, setDateRange] = useState("1d");
+  const { fromDate, toDate } = useMemo(() => getDateRange(dateRange), [dateRange]);
   const [timeframe, setTimeframe] = useState("1m");
   const [stockDetails, setStockDetails] = useState(null);
 
@@ -182,12 +213,7 @@ const StockPreviewPage = () => {
         const payload = {
           name: symbol,
           exchange: exch === "N" ? "NSE" : exch === "B" ? "BSE" : "MCX",
-          last_price: Number(snapshot.LastTradedPrice),
-          ohlc: { open: Number(snapshot.Open), high: Number(snapshot.High), low: Number(snapshot.Low), close: Number(snapshot.PClose) },
-          day_change: Number(snapshot.NetChange),
-          day_change_perc: (Number(snapshot.NetChange) / Number(snapshot.PClose)) * 100,
-          week_52_high: Number(snapshot.AHigh),
-          week_52_low: Number(snapshot.ALow),
+          snapshot,
         };
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ai/analyze`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         const data = await res.json();
@@ -227,12 +253,22 @@ const StockPreviewPage = () => {
       try { chartInstance.current.remove(); } catch (e) {}
       chartInstance.current = null;
     }
+    const isLight = theme === "light";
     const chart = createChart(chartRef.current, {
-      layout: { background: { color: "#0b0f1a" }, textColor: "#475569" },
-      grid: { vertLines: { color: "#1a2233" }, horzLines: { color: "#1a2233" } },
-      crosshair: { vertLine: { color: "#334155" }, horzLine: { color: "#334155" } },
-      timeScale: { borderColor: "#1e2a3a", timeVisible: true },
-      rightPriceScale: { borderColor: "#1e2a3a" },
+      layout: {
+        background: { color: isLight ? "#f1f5f9" : "#0b0f1a" },
+        textColor: isLight ? "#64748b" : "#475569",
+      },
+      grid: {
+        vertLines: { color: isLight ? "#e2e8f0" : "#1a2233" },
+        horzLines: { color: isLight ? "#e2e8f0" : "#1a2233" },
+      },
+      crosshair: {
+        vertLine: { color: isLight ? "#94a3b8" : "#334155" },
+        horzLine: { color: isLight ? "#94a3b8" : "#334155" },
+      },
+      timeScale: { borderColor: isLight ? "#e2e8f0" : "#1e2a3a", timeVisible: true },
+      rightPriceScale: { borderColor: isLight ? "#e2e8f0" : "#1e2a3a" },
       handleScroll: true,
       handleScale: true,
     });
@@ -273,11 +309,11 @@ const StockPreviewPage = () => {
         chartInstance.current = null;
       }
     };
-  }, [candles]);
+  }, [candles, theme]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0b0f1a]">
+      <div className="flex items-center justify-center h-screen bg-primaryBg">
         <div className="text-center space-y-1.5 sm:space-y-2">
           <div className="w-5 h-5 sm:w-6 sm:h-6 border border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-[10px] sm:text-xs text-slate-500 font-mono">Loading {symbol}...</p>
@@ -288,12 +324,12 @@ const StockPreviewPage = () => {
 
  return (
   <div
-    className="flex flex-col bg-[#0b0f1a] text-slate-200 overflow-x-hidden overflow-y-auto sm:overflow-hidden sm:min-h-0"
+    className="flex flex-col bg-primaryBg text-textPrimary overflow-x-hidden overflow-y-auto sm:overflow-hidden sm:min-h-0"
     style={{ minHeight: "calc(100vh - 5.5rem)", fontFamily: "ui-monospace, monospace" }}
   >
 
     {/* ── TOP BAR ── */}
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between px-2.5 sm:px-5 py-1.5 border-b border-[#1e2a3a] bg-[#0f1623] flex-shrink-0 gap-1.5 sm:gap-0">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between px-2.5 sm:px-5 py-1.5 border-b border-borderColor bg-cardBg flex-shrink-0 gap-1.5 sm:gap-0">
 
       {/* ── LEFT: NAME + META ── */}
       <div className="flex flex-col items-start gap-1.5 sm:gap-2.5 mt-1.5 sm:mt-3">
@@ -341,7 +377,7 @@ const StockPreviewPage = () => {
     </div>
 
     {/* ── TOOLBAR ── */}
-    <div className="flex items-center justify-between px-2 sm:px-4 py-1 border-b border-[#1e2a3a] bg-[#0f1623] flex-shrink-0 gap-1.5">
+    <div className="flex items-center justify-between px-2 sm:px-4 py-1 border-b border-borderColor bg-cardBg flex-shrink-0 gap-1.5">
       <div className="flex gap-0.5 sm:gap-1">
         {["1m", "5m", "15m"].map((tf) => (
           <button
@@ -350,34 +386,38 @@ const StockPreviewPage = () => {
             className={`px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[11px] rounded-md border transition-colors ${
               timeframe === tf
                 ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
-                : "bg-transparent text-slate-500 border-[#1e2a3a] hover:text-slate-300"
+                : "bg-transparent text-slate-500 border-borderColor hover:text-slate-300"
             }`}
           >
             {tf}
           </button>
         ))}
       </div>
-      <div className="flex gap-1 sm:gap-2 items-center">
-        {[["from", fromDate, setFromDate], ["to", toDate, setToDate]].map(([label, val, setter]) => (
-          <input
-            key={label}
-            type="date"
-            value={val}
-            onChange={(e) => setter(e.target.value)}
-            className="bg-[#0b0f1a] border border-[#1e2a3a] text-slate-400 text-[9px] sm:text-[11px] px-1 sm:px-2 py-0.5 rounded-md outline-none focus:border-slate-500 max-w-[110px] sm:max-w-none"
-          />
+      <div className="flex gap-0.5 sm:gap-1 items-center flex-wrap justify-end">
+        {DATE_RANGES.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setDateRange(id)}
+            className={`px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[11px] rounded-md border transition-colors whitespace-nowrap ${
+              dateRange === id
+                ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+                : "bg-transparent text-slate-500 border-borderColor hover:text-slate-300"
+            }`}
+          >
+            {label}
+          </button>
         ))}
       </div>
     </div>
 
     {/* ── MAIN CONTENT ── */}
-    <div className="flex flex-col sm:flex-row sm:flex-1 sm:min-h-0 overflow-visible sm:overflow-hidden bg-[#0f1623]">
+    <div className="flex flex-col sm:flex-row sm:flex-1 sm:min-h-0 overflow-visible sm:overflow-hidden bg-cardBg">
 
       {/* ── CHART COLUMN ── */}
-      <div className="flex flex-col sm:flex-1 sm:min-h-0 sm:border-r border-[#1e2a3a] sm:overflow-y-auto">
+      <div className="flex flex-col sm:flex-1 sm:min-h-0 sm:border-r border-borderColor sm:overflow-y-auto">
 
         {/* Chart */}
-        <div className="relative h-[250px] sm:h-auto sm:min-h-[220px] sm:basis-[62%] bg-[#0b0f1a] shrink-0">
+        <div className="relative h-[250px] sm:h-auto sm:min-h-[220px] sm:basis-[62%] bg-primaryBg shrink-0">
           {noCandleData ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center space-y-1">
               <p className="text-xs sm:text-sm text-slate-500">No market data available</p>
@@ -389,7 +429,7 @@ const StockPreviewPage = () => {
         </div>
 
         {/* ── AI STRIP (desktop only — below chart) ── */}
-        <div className="hidden sm:block flex-1 min-h-[170px] border-t border-[#1e2a3a] bg-[#0f1623] px-4 py-3">
+        <div className="hidden sm:block flex-1 min-h-[170px] border-t border-borderColor bg-cardBg px-4 py-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-[10px] text-slate-500 uppercase tracking-widest">AI Analysis</p>
             <span className="inline-flex items-center gap-1 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2 py-0.5 text-[9px] text-indigo-300">
@@ -414,12 +454,12 @@ const StockPreviewPage = () => {
             </div>
             <div className="rounded-xl border border-[#1f2d44] bg-gradient-to-br from-[#121a2b] via-[#0f1623] to-[#0d1421] p-3 shadow-[0_10px_30px_rgba(0,0,0,0.2)]">
               <div className="h-full min-h-0 grid gap-3">
-                <div className="min-h-0 rounded-lg border border-[#22324a] bg-[#0e1625]/80 px-3 py-2.5">
+                <div className="min-h-0 rounded-lg border border-borderColor bg-[var(--color-surface-elevated)] px-3 py-2.5">
                   <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-2">Model Insight</p>
                   {aiLoading ? (
                     <div className="space-y-1.5"><div className="h-2 bg-slate-700/80 rounded animate-pulse w-full" /><div className="h-2 bg-slate-700/80 rounded animate-pulse w-11/12" /><div className="h-2 bg-slate-700/80 rounded animate-pulse w-5/6" /></div>
                   ) : (
-                    <p className="h-[calc(100%-1.15rem)] overflow-y-auto pr-1 text-[12px] leading-relaxed text-slate-200">{aiData?.reason || <span className="text-slate-600">No analysis available</span>}</p>
+                    <p className="h-[calc(100%-1.15rem)] overflow-y-auto pr-1 text-[12px] leading-relaxed text-textPrimary">{aiData?.reason || <span className="text-slate-600">No analysis available</span>}</p>
                   )}
                 </div>
               </div>
@@ -430,21 +470,21 @@ const StockPreviewPage = () => {
 
       {/* ── RIGHT PANEL (below chart on mobile, sidebar on desktop) ── */}
       <div
-        className="flex-shrink-0 flex flex-col min-h-0 overflow-y-auto bg-[#0f1623] w-full sm:w-[clamp(240px,24vw,420px)] border-t sm:border-t-0 border-[#1e2a3a]"
+        className="flex-shrink-0 flex flex-col min-h-0 overflow-y-auto bg-cardBg w-full sm:w-[clamp(240px,24vw,420px)] border-t sm:border-t-0 border-borderColor"
       >
 
         {qty > 0 && (
-          <div className="px-2.5 sm:px-3 py-2 border-b border-[#1e2a3a]">
+          <div className="px-2.5 sm:px-3 py-2 border-b border-borderColor">
             <p className="text-[8px] sm:text-[9px] text-slate-600 uppercase tracking-widest mb-1 sm:mb-1.5">Your Position</p>
-            <div className="bg-[#0b0f1a] border border-[#1e2a3a] rounded-lg p-2 sm:p-2.5">
+            <div className="bg-primaryBg border border-borderColor rounded-lg p-2 sm:p-2.5">
               <div className="flex justify-between mb-1.5 sm:mb-2">
                 <div>
                   <p className="text-[8px] sm:text-[9px] text-slate-600 mb-0.5">Qty</p>
-                  <p className="text-[11px] sm:text-[13px] font-medium text-slate-200">{formatNumber(qty)}</p>
+                  <p className="text-[11px] sm:text-[13px] font-medium text-textPrimary">{formatNumber(qty)}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-[8px] sm:text-[9px] text-slate-600 mb-0.5">Avg price</p>
-                  <p className="text-[11px] sm:text-[13px] font-medium text-slate-200">₹ {formatNumber(avgPrice)}</p>
+                  <p className="text-[11px] sm:text-[13px] font-medium text-textPrimary">₹ {formatNumber(avgPrice)}</p>
                 </div>
               </div>
               <div className="flex justify-between mb-1.5 sm:mb-2">
@@ -457,7 +497,7 @@ const StockPreviewPage = () => {
                   <p className="text-[10px] sm:text-[11px] text-slate-300">₹ {formatNumber(currentValue)}</p>
                 </div>
               </div>
-              <div className="border-t border-[#1e2a3a] pt-1.5 sm:pt-2 flex justify-between items-center">
+              <div className="border-t border-borderColor pt-1.5 sm:pt-2 flex justify-between items-center">
                 <p className="text-[9px] sm:text-[10px] text-slate-500">P&L</p>
                 <p className={`text-[12px] sm:text-[14px] font-medium ${isProfit ? "text-green-400" : "text-red-400"}`}>
                   {isProfit ? "+" : ""}₹ {formatNumber(Math.abs(pnl))}
@@ -467,7 +507,7 @@ const StockPreviewPage = () => {
           </div>
         )}
 
-        <div className="px-2.5 sm:px-3 py-2 border-b border-[#1e2a3a]">
+        <div className="px-2.5 sm:px-3 py-2 border-b border-borderColor">
           <p className="text-[8px] sm:text-[9px] text-slate-600 uppercase tracking-widest mb-1 sm:mb-1.5">OHLC</p>
           <div className="grid grid-cols-4 gap-1">
             {[
@@ -476,7 +516,7 @@ const StockPreviewPage = () => {
               { label: "Low", val: normalized.low, cls: "text-red-400" },
               { label: "Prev", val: normalized.prevClose, cls: "text-slate-300" },
             ].map(({ label, val, cls }) => (
-              <div key={label} className="bg-[#0b0f1a] border border-[#1e2a3a] rounded-md p-1 sm:p-1.5 text-center">
+              <div key={label} className="bg-primaryBg border border-borderColor rounded-md p-1 sm:p-1.5 text-center">
                 <p className="text-[7px] sm:text-[9px] text-slate-600 mb-0.5">{label}</p>
                 <p className={`text-[9px] sm:text-[10px] ${cls}`}>{formatNumber(val)}</p>
               </div>
@@ -484,7 +524,7 @@ const StockPreviewPage = () => {
           </div>
         </div>
 
-        <div className="px-2.5 sm:px-3 py-2 border-b sm:border-b-0 border-[#1e2a3a]">
+        <div className="px-2.5 sm:px-3 py-2 border-b sm:border-b-0 border-borderColor">
           <p className="text-[8px] sm:text-[9px] text-slate-600 uppercase tracking-widest mb-1 sm:mb-1.5">Market Stats</p>
           <div className="grid grid-cols-2 gap-1">
             {[
@@ -493,7 +533,7 @@ const StockPreviewPage = () => {
               { label: "52W high", val: `₹ ${formatNumber(normalized.week52High)}` },
               { label: "52W low", val: `₹ ${formatNumber(normalized.week52Low)}` },
             ].map(({ label, val }) => (
-              <div key={label} className="bg-[#0b0f1a] border border-[#1e2a3a] rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5">
+              <div key={label} className="bg-primaryBg border border-borderColor rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5">
                 <p className="text-[7px] sm:text-[9px] text-slate-600 mb-0.5">{label}</p>
                 <p className="text-[9px] sm:text-[11px] text-slate-300">{val}</p>
               </div>
@@ -502,7 +542,7 @@ const StockPreviewPage = () => {
         </div>
 
         {/* ── AI STRIP (mobile only — after Market Stats) ── */}
-        <div className="sm:hidden px-2.5 py-2 bg-[#0f1623]">
+        <div className="sm:hidden px-2.5 py-2 bg-cardBg">
           <div className="flex items-center justify-between mb-1.5">
             <p className="text-[8px] text-slate-500 uppercase tracking-widest">AI Analysis</p>
             <span className="inline-flex items-center gap-1 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-1.5 py-0.5 text-[7px] text-indigo-300">
@@ -525,12 +565,12 @@ const StockPreviewPage = () => {
             ))}
           </div>
           <div className="rounded-lg border border-[#1f2d44] bg-gradient-to-br from-[#121a2b] via-[#0f1623] to-[#0d1421] p-2">
-            <div className="rounded-md border border-[#22324a] bg-[#0e1625]/80 px-2 py-2">
+            <div className="rounded-md border border-borderColor bg-[var(--color-surface-elevated)] px-2 py-2">
               <p className="text-[8px] uppercase tracking-widest text-slate-500 mb-1">Model Insight</p>
               {aiLoading ? (
                 <div className="space-y-1"><div className="h-2 bg-slate-700/80 rounded animate-pulse w-full" /><div className="h-2 bg-slate-700/80 rounded animate-pulse w-11/12" /><div className="h-2 bg-slate-700/80 rounded animate-pulse w-5/6" /></div>
               ) : (
-                <p className="overflow-y-auto pr-1 text-[10px] leading-relaxed text-slate-200 max-h-24">{aiData?.reason || <span className="text-slate-600">No analysis available</span>}</p>
+                <p className="overflow-y-auto pr-1 text-[10px] leading-relaxed text-textPrimary max-h-24">{aiData?.reason || <span className="text-slate-600">No analysis available</span>}</p>
               )}
             </div>
           </div>
