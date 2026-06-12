@@ -6,8 +6,11 @@ import TradeModal from "../../components/trading/TradeModal";
 import { useNavigate } from "react-router-dom";
 import { fetchUserData } from "../../services/user.service";
 import { TrendingUp, TrendingDown, Layers, Clock } from "lucide-react";
+import { useThemeStore } from "../../store/themeStore";
 
 function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
+  const theme = useThemeStore((s) => s.theme);
+  const isLight = theme === "light";
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -104,6 +107,21 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
     ? ((positionTotals.todayPL / positionTotals.investedForReturn) * 100).toFixed(2)
     : null;
 
+  const getCardValueColor = (card) => {
+    if (card.valueColor) {
+      if (isLight) return card.badgePositive ? "#15803d" : "#b91c1c";
+      return card.valueColor;
+    }
+    return isLight ? "#0f172a" : "#f0f2f8";
+  };
+
+  const profitColor = (positive) =>
+    isLight ? (positive ? "#15803d" : "#b91c1c") : positive ? "#22d38a" : "#ff4d6a";
+  const labelClass = isLight ? "text-slate-600" : "text-textSubtle";
+  const mobileCardBg = isLight ? undefined : "linear-gradient(145deg, #0d0f18 0%, #0a0c13 100%)";
+  const mobileStatBg = isLight ? "var(--color-surface-subtle)" : "rgba(255,255,255,0.03)";
+  const mobileBorderSubtle = isLight ? "var(--color-border)" : "rgba(255,255,255,0.06)";
+
   const cards = [
     {
       label: "Margin Used",
@@ -163,19 +181,18 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
       {/* ── Header ── */}
       <div className="flex items-end justify-between px-1 sm:px-0">
         <h1
-          className="text-base sm:text-[22px]"
+          className="text-base sm:text-[22px] font-extrabold tracking-tight bg-clip-text text-transparent"
           style={{
             fontFamily: "'Syne', sans-serif",
-            fontWeight: 800,
             letterSpacing: "-0.5px",
-            background: "linear-gradient(135deg, #fff 40%, #7c6fff)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
+            backgroundImage: isLight
+              ? "linear-gradient(135deg, #0f172a 0%, #4338ca 55%, #7c3aed 100%)"
+              : "linear-gradient(135deg, #f8fafc 0%, #c4b5fd 55%, #7c6fff 100%)",
           }}
         >
           Positions
         </h1>
-        <span className="text-[8px] sm:text-[11px] tracking-wide" style={{ color: "#5a5f78" }}>
+        <span className={`text-[8px] sm:text-[11px] tracking-wide ${labelClass}`}>
           *Commodity &amp; Intraday (Includes Derivatives)
         </span>
       </div>
@@ -201,21 +218,21 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
                   className="relative overflow-hidden rounded-xl sm:rounded-[20px] border border-borderColor bg-cardBg transition-all duration-200 hover:-translate-y-1 px-2.5 py-2 sm:p-[20px_22px_18px]"
                 >
                   <div className="relative flex items-center justify-between mb-1 sm:mb-4">
-                    <p className="text-[7px] sm:text-[11px] font-semibold uppercase tracking-[1.4px]" style={{ color: "#5a5f78" }}>{card.label}</p>
+                    <p className={`text-[7px] sm:text-[11px] font-semibold uppercase tracking-[1.4px] ${labelClass}`}>{card.label}</p>
                     <div className="flex items-center justify-center w-5 h-5 sm:w-9 sm:h-9 rounded-md sm:rounded-xl shrink-0" style={{ background: card.iconBg, border: `1px solid ${card.iconColor}25` }}>
                       <Icon size={10} className="sm:hidden" style={{ color: card.iconColor }} />
                       <Icon size={16} className="hidden sm:block" style={{ color: card.iconColor }} />
                     </div>
                   </div>
 
-                  <p className="relative text-[11px] sm:text-[22px] font-bold tracking-tight leading-none mb-1 sm:mb-3" style={{ fontFamily: "'IBM Plex Mono', monospace", color: card.valueColor || "#f0f2f8" }}>
+                  <p className="relative text-[11px] sm:text-[26px] font-bold tracking-tight leading-none mb-1 sm:mb-3" style={{ fontFamily: "'IBM Plex Mono', monospace", color: getCardValueColor(card) }}>
                     {card.value}
                   </p>
 
                   <div className="relative flex items-center justify-between gap-1">
-                    <span className="text-[7px] sm:text-[11px] hidden sm:inline" style={{ color: "#5a5f78" }}>{card.sub}</span>
+                    <span className={`text-[7px] sm:text-[11px] hidden sm:inline ${labelClass}`}>{card.sub}</span>
                     {card.badge && (
-                      <span className="text-[8px] sm:text-[12px] font-bold px-1 py-px sm:px-2.5 sm:py-1 rounded-sm sm:rounded-lg" style={{ background: card.badgePositive ? "rgba(34,211,138,0.12)" : "rgba(255,77,106,0.12)", color: card.badgePositive ? "#22d38a" : "#ff4d6a", border: `1px solid ${card.badgePositive ? "rgba(34,211,138,0.2)" : "rgba(255,77,106,0.2)"}`, fontFamily: "'IBM Plex Mono', monospace" }}>
+                      <span className="text-[8px] sm:text-[12px] font-bold px-1 py-px sm:px-2.5 sm:py-1 rounded-sm sm:rounded-lg" style={{ background: card.badgePositive ? "rgba(34,211,138,0.12)" : "rgba(255,77,106,0.12)", color: profitColor(card.badgePositive), border: `1px solid ${card.badgePositive ? "rgba(34,211,138,0.2)" : "rgba(255,77,106,0.2)"}`, fontFamily: "'IBM Plex Mono', monospace" }}>
                         {card.badge}
                       </span>
                     )}
@@ -228,16 +245,23 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
 
        {/* Mobile Totals */}
        {!loading && positions.length > 0 && (
-          <div className="sm:hidden rounded-xl border px-3 py-2 flex items-center justify-between" style={{ background: "rgba(124,111,255,0.04)", borderColor: "rgba(124,111,255,0.15)", margin:"0 10px " }}>
-            <span className="text-[9px] font-bold uppercase tracking-[1px]" style={{ fontFamily: "'Syne', sans-serif", color: "#7c6fff" }}>Total</span>
+          <div
+            className="sm:hidden rounded-xl border px-3 py-2 flex items-center justify-between bg-cardBg"
+            style={{
+              background: isLight ? "rgba(124,111,255,0.06)" : "rgba(124,111,255,0.04)",
+              borderColor: isLight ? "rgba(124,111,255,0.22)" : "rgba(124,111,255,0.15)",
+              margin: "0 10px",
+            }}
+          >
+            <span className="text-[9px] font-bold uppercase tracking-[1px] text-[#7c6fff]" style={{ fontFamily: "'Syne', sans-serif" }}>Total</span>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-[7px] uppercase" style={{ color: "#5a5f78" }}>Value</p>
-                <p className="text-[10px] font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#f0f2f8" }}>₹{formatNumber(positionTotals.currentValue.toFixed(0))}</p>
+                <p className={`text-[7px] uppercase ${labelClass}`}>Value</p>
+                <p className="text-[10px] font-semibold text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>₹{formatNumber(positionTotals.currentValue.toFixed(0))}</p>
               </div>
               <div className="text-right">
-                <p className="text-[7px] uppercase" style={{ color: "#5a5f78" }}>P&L</p>
-                <p className="text-[10px] font-bold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: positionTotals.pnl >= 0 ? "#22d38a" : "#ff4d6a" }}>
+                <p className={`text-[7px] uppercase ${labelClass}`}>P&L</p>
+                <p className="text-[10px] font-bold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(positionTotals.pnl >= 0) }}>
                   {positionTotals.pnl >= 0 ? "+" : ""}₹{formatNumber(positionTotals.pnl.toFixed(0))}
                   <span className="text-[8px] ml-1 opacity-70">({positionTotals.investedForReturn > 0 ? `${((positionTotals.pnl / positionTotals.investedForReturn) * 100).toFixed(2)}%` : "—"})</span>
                 </p>
@@ -280,26 +304,26 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
             <div
               key={i}
               onClick={() => navigate(`/stock/${item.Exch}/${item.ExchType}/${item.ScripCode}/${item.symbol}`)}
-              className="rounded-xl border border-borderColor overflow-hidden cursor-pointer active:scale-[0.99] transition-transform"
-              style={{ background: "linear-gradient(145deg, #0d0f18 0%, #0a0c13 100%)", borderColor: "rgba(255,255,255,0.06)", margin:"3px 10px" }}
+              className="rounded-xl border border-borderColor overflow-hidden cursor-pointer active:scale-[0.99] transition-transform bg-cardBg"
+              style={{ background: mobileCardBg, borderColor: mobileBorderSubtle, margin: "3px 10px" }}
             >
               {/* Top accent */}
-              <div className="h-[1px]" style={{ background: `linear-gradient(90deg, transparent, ${isProfit ? "#22d38a" : "#ff4d6a"}40, transparent)` }} />
+              <div className="h-[1px]" style={{ background: `linear-gradient(90deg, transparent, ${profitColor(isProfit)}40, transparent)` }} />
 
               <div className="px-3 pt-2 pb-1.5">
                 {/* Row 1: Name + LTP */}
                 <div className="flex items-start justify-between mb-1.5">
                   <div className="min-w-0 flex-1 mr-2">
-                    <p className="text-[11px] font-semibold tracking-tight truncate" style={{ fontFamily: "'Syne', sans-serif", color: "#f0f2f8" }}>{item.name}</p>
+                    <p className="text-[11px] font-semibold tracking-tight truncate text-textPrimary" style={{ fontFamily: "'Syne', sans-serif" }}>{item.name}</p>
                     <div className="flex items-center gap-1 mt-0.5">
                       <span className="text-[7px] font-semibold tracking-[0.5px] rounded px-1 py-px" style={{ background: "rgba(124,111,255,0.12)", color: "#7c6fff" }}>{exchLabel}</span>
-                      <span className="text-[7px] truncate" style={{ color: "#5a5f78" }}>{item.symbol}</span>
+                      <span className={`text-[7px] truncate ${labelClass}`}>{item.symbol}</span>
                       {expiryMeta && <span className="text-[7px] px-1 py-px rounded font-medium" style={{ background: `${expiryMeta.color}15`, color: expiryMeta.color }}>{expiryMeta.label}</span>}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[11px] font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: ltpUp ? "#22d38a" : "#ff4d6a" }}>₹{live ? formatNumber(live.LastRate) : "0.00"}</p>
-                    <p className="text-[8px]" style={{ fontFamily: "'IBM Plex Mono', monospace", color: ltpUp ? "#22d38a" : "#ff4d6a" }}>
+                    <p className="text-[11px] font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(ltpUp) }}>₹{live ? formatNumber(live.LastRate) : "0.00"}</p>
+                    <p className="text-[8px]" style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(ltpUp) }}>
                       {live ? `${live.LastRate - live.PClose >= 0 ? "+" : ""}${(live.LastRate - live.PClose).toFixed(2)} (${live.ChgPcnt.toFixed(2)}%)` : "—"}
                     </p>
                   </div>
@@ -307,36 +331,36 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
 
                 {/* Row 2: Stats grid */}
                 <div className="grid grid-cols-4 gap-1 mb-1.5">
-                  <div className="rounded-md px-1.5 py-1 text-center" style={{ background: "rgba(255,255,255,0.03)" }}>
-                    <p className="text-[6px] uppercase tracking-wider" style={{ color: "#5a5f78" }}>Qty</p>
-                    <p className="text-[9px] font-semibold mt-px" style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#f0f2f8" }}>
+                  <div className="rounded-md px-1.5 py-1 text-center" style={{ background: mobileStatBg }}>
+                    <p className={`text-[6px] uppercase tracking-wider ${labelClass}`}>Qty</p>
+                    <p className="text-[9px] font-semibold mt-px text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
                       {isMCX ? item.lots : formatNumber(item.totalQty)}
                     </p>
                   </div>
-                  <div className="rounded-md px-1.5 py-1 text-center" style={{ background: "rgba(255,255,255,0.03)" }}>
-                    <p className="text-[6px] uppercase tracking-wider" style={{ color: "#5a5f78" }}>Avg</p>
-                    <p className="text-[9px] font-semibold mt-px" style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#f0f2f8" }}>₹{formatNumber(Number(avg).toFixed(2))}</p>
+                  <div className="rounded-md px-1.5 py-1 text-center" style={{ background: mobileStatBg }}>
+                    <p className={`text-[6px] uppercase tracking-wider ${labelClass}`}>Avg</p>
+                    <p className="text-[9px] font-semibold mt-px text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>₹{formatNumber(Number(avg).toFixed(2))}</p>
                   </div>
-                  <div className="rounded-md px-1.5 py-1 text-center" style={{ background: "rgba(255,255,255,0.03)" }}>
-                    <p className="text-[6px] uppercase tracking-wider" style={{ color: "#5a5f78" }}>Value</p>
-                    <p className="text-[9px] font-semibold mt-px" style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#f0f2f8" }}>₹{live ? formatNumber(currentValue.toFixed(0)) : "—"}</p>
+                  <div className="rounded-md px-1.5 py-1 text-center" style={{ background: mobileStatBg }}>
+                    <p className={`text-[6px] uppercase tracking-wider ${labelClass}`}>Value</p>
+                    <p className="text-[9px] font-semibold mt-px text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>₹{live ? formatNumber(currentValue.toFixed(0)) : "—"}</p>
                   </div>
                   <div className="rounded-md px-1.5 py-1 text-center" style={{ background: isProfit ? "rgba(34,211,138,0.06)" : "rgba(255,77,106,0.06)" }}>
-                    <p className="text-[6px] uppercase tracking-wider" style={{ color: "#5a5f78" }}>P&L</p>
-                    <p className="text-[9px] font-bold mt-px" style={{ fontFamily: "'IBM Plex Mono', monospace", color: isProfit ? "#22d38a" : "#ff4d6a" }}>
+                    <p className={`text-[6px] uppercase tracking-wider ${labelClass}`}>P&L</p>
+                    <p className="text-[9px] font-bold mt-px" style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(isProfit) }}>
                       {isProfit ? "+" : ""}{formatNumber(pnl.toFixed(0))}
                     </p>
                   </div>
                 </div>
 
                 {/* Row 3: Action bar */}
-                <div className="flex items-center justify-between pt-1 border-t" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
-                  <span className="text-[8px] font-bold px-1.5 py-px rounded" style={{ fontFamily: "'IBM Plex Mono', monospace", color: isProfit ? "#22d38a" : "#ff4d6a", background: isProfit ? "rgba(34,211,138,0.1)" : "rgba(255,77,106,0.1)" }}>
+                <div className="flex items-center justify-between pt-1 border-t border-borderColor">
+                  <span className="text-[8px] font-bold px-1.5 py-px rounded" style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(isProfit), background: isProfit ? "rgba(34,211,138,0.1)" : "rgba(255,77,106,0.1)" }}>
                     {invested > 0 ? `${((pnl / invested) * 100).toFixed(2)}%` : "—"}
                   </span>
                   <div className="flex gap-1.5">
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }} className="px-2.5 py-0.5 text-[8px] font-semibold rounded-md" style={{ border: "1px solid rgba(34,211,138,0.3)", background: "rgba(34,211,138,0.07)", color: "#22d38a" }}>BUY</button>
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }} className="px-2.5 py-0.5 text-[8px] font-semibold rounded-md" style={{ border: "1px solid rgba(255,77,106,0.3)", background: "rgba(255,77,106,0.07)", color: "#ff4d6a" }}>SELL</button>
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }} className="px-2.5 py-0.5 text-[8px] font-semibold rounded-md" style={{ border: "1px solid rgba(34,211,138,0.3)", background: "rgba(34,211,138,0.07)", color: profitColor(true) }}>BUY</button>
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }} className="px-2.5 py-0.5 text-[8px] font-semibold rounded-md" style={{ border: "1px solid rgba(255,77,106,0.3)", background: "rgba(255,77,106,0.07)", color: profitColor(false) }}>SELL</button>
                   </div>
                 </div>
               </div>
@@ -347,7 +371,7 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
        
 
         {!loading && positions.length === 0 && (
-          <div className="p-8 text-center" style={{ color: "#5a5f78", fontSize: 11 }}>No positions available</div>
+          <div className={`p-8 text-center text-[11px] ${labelClass}`}>No positions available</div>
         )}
       </div>
 
@@ -369,12 +393,11 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
             ].map((col, i) => (
               <span
                 key={i}
-                className={`text-[10px] font-semibold uppercase tracking-[1px] ${col.left ? "text-left" : ""}`}
-                style={{ color: "#5a5f78" }}
+                className={`text-[10px] font-semibold uppercase tracking-[1px] ${col.left ? "text-left" : ""} ${labelClass}`}
               >
                 {col.main}
                 {col.sub && (
-                  <div className="text-[9px] font-normal tracking-[0.5px] mt-0.5" style={{ color: "rgba(90,95,120,0.7)", textTransform: "none" }}>
+                  <div className={`text-[9px] font-normal tracking-[0.5px] mt-0.5 ${labelClass}`} style={{ textTransform: "none" }}>
                     {col.sub}
                   </div>
                 )}
@@ -424,15 +447,15 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
                 <div
                   key={i}
                   onClick={() => navigate(`/stock/${item.Exch}/${item.ExchType}/${item.ScripCode}/${item.symbol}`)}
-                  className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 hover:bg-white/[0.025] cursor-pointer"
+                  className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 hover:bg-[var(--color-row-hover)] cursor-pointer"
                   style={{ gridTemplateColumns: "2fr 1.1fr 0.9fr 1fr 1.2fr 1.2fr" }}
                 >
                   <div className="text-left">
-                    <p className="text-[13px] font-semibold tracking-tight" style={{ fontFamily: "'Syne', sans-serif", color: "#f0f2f8" }}>{item.name}</p>
+                    <p className="text-[13px] font-semibold tracking-tight text-textPrimary" style={{ fontFamily: "'Syne', sans-serif" }}>{item.name}</p>
                     <div className="flex items-center gap-1.5 mt-1">
                       <span className="text-[9px] font-semibold tracking-[0.5px] rounded px-1.5 py-0.5" style={{ background: "rgba(124,111,255,0.12)", color: "#7c6fff" }}>{exchLabel}</span>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px]" style={{ color: "#5a5f78" }}>{item.symbol}</span>
+                        <span className={`text-[10px] ${labelClass}`}>{item.symbol}</span>
                         {expiryMeta && (
                           <span className="text-[12px] px-2 py-[2px] rounded-md font-medium" style={{ background: `${expiryMeta.color}15`, color: expiryMeta.color, border: `1px solid ${expiryMeta.color}30` }}>{expiryMeta.label}</span>
                         )}
@@ -441,8 +464,8 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
                   </div>
 
                   <div className="flex flex-col items-center">
-                    <span className="text-[15px] font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: ltpUp ? "#22d38a" : "#ff4d6a" }}>₹ {live ? formatNumber(live.LastRate) : "0.00"}</span>
-                    <span className="text-[15px] mt-0.5" style={{ fontFamily: "'IBM Plex Mono', monospace", color: ltpUp ? "#22d38a" : "#ff4d6a" }}>
+                    <span className="text-[15px] font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(ltpUp) }}>₹ {live ? formatNumber(live.LastRate) : "0.00"}</span>
+                    <span className="text-[15px] mt-0.5" style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(ltpUp) }}>
                       {live ? `${live.LastRate - live.PClose >= 0 ? "+" : ""}${(live.LastRate - live.PClose).toFixed(2)} (${live.ChgPcnt.toFixed(2)}%)` : "—"}
                     </span>
                   </div>
@@ -450,35 +473,35 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
                   <div className="flex flex-col items-center">
                     {isMCX ? (
                       <>
-                        <span className="text-[15px]" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{item.lots}</span>
-                        <span className="text-[12px] mt-0.5" style={{ color: "#5a5f78" }}>Lot: {formatNumber(item.multiplier || item.lotSize)}</span>
+                        <span className="text-[15px] text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{item.lots}</span>
+                        <span className={`text-[15px] mt-0.5 ${labelClass}`}>Lot: {formatNumber(item.multiplier || item.lotSize)}</span>
                       </>
                     ) : (
-                      <span className="text-[15px]" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatNumber(item.totalQty)}</span>
+                      <span className="text-[15px] text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{formatNumber(item.totalQty)}</span>
                     )}
                   </div>
 
                   <div className="flex flex-col items-center">
-                    <span className="text-[15px]" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>₹ {formatNumber(Number(item.avgPrice || 0).toFixed(2))}</span>
-                    <span className="text-[12px] mt-0.5" style={{ color: "#5a5f78" }}>{isMCX ? "Per Unit" : "Per Share"}</span>
+                    <span className="text-[15px] text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>₹ {formatNumber(Number(item.avgPrice || 0).toFixed(2))}</span>
+                    <span className={`text-[15px] mt-0.5 ${labelClass}`}>{isMCX ? "Per Unit" : "Per Share"}</span>
                   </div>
 
                   <div className="flex flex-col items-center">
-                    <span className="text-[15px]" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>₹ {live ? formatNumber(currentValue.toFixed(2)) : "—"}</span>
-                    <span className="text-[15px] mt-0.5" style={{ color: "#5a5f78" }}>₹ {formatNumber(investedDisplay.toFixed(2))}</span>
+                    <span className="text-[15px] text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>₹ {live ? formatNumber(currentValue.toFixed(2)) : "—"}</span>
+                    <span className={`text-[15px] mt-0.5 ${labelClass}`}>₹ {formatNumber(investedDisplay.toFixed(2))}</span>
                   </div>
 
                   <div className="flex flex-col items-center gap-1">
-                    <span className="inline-flex items-center px-2.5 pt-1 rounded-full text-[15px] font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: isProfit ? "#22d38a" : "#ff4d6a" }}>₹ {isProfit ? "+" : ""}{formatNumber(pnl.toFixed(2))}</span>
-                    <span className="text-[15px]" style={{ color: isProfit ? "#22d38a" : "#ff4d6a" }}>({invested > 0 ? `${((pnl / invested) * 100).toFixed(2)}%` : "—"})</span>
+                    <span className="inline-flex items-center px-2.5 pt-1 rounded-full text-[15px] font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(isProfit) }}>₹ {isProfit ? "+" : ""}{formatNumber(pnl.toFixed(2))}</span>
+                    <span className="text-[15px]" style={{ color: profitColor(isProfit) }}>({invested > 0 ? `${((pnl / invested) * 100).toFixed(2)}%` : "—"})</span>
                   </div>
 
                   <div
-                    style={{ background: "linear-gradient(to right, rgba(23,29,44,0) 0%, rgba(23,29,44,0.7) 50%, rgba(23,29,44,1) 100%)", height: "100%", paddingLeft: "10vh" }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                    style={{ height: "100%", paddingLeft: "10vh" }}
+                    className="row-actions-fade absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200"
                   >
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(34,211,138,0.3)", background: "rgba(34,211,138,0.07)", color: "#22d38a" }}>Buy</button>
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(255,77,106,0.3)", background: "rgba(255,77,106,0.07)", color: "#ff4d6a" }}>Sell</button>
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(34,211,138,0.3)", background: "rgba(34,211,138,0.07)", color: profitColor(true) }}>Buy</button>
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(255,77,106,0.3)", background: "rgba(255,77,106,0.07)", color: profitColor(false) }}>Sell</button>
                   </div>
                 </div>
               );
@@ -487,28 +510,32 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
 
           {!loading && positions.length > 0 && (
             <div
-              className="grid px-5 py-4 items-center text-center"
-              style={{ gridTemplateColumns: "2fr 1.1fr 0.9fr 1fr 1.2fr 1.2fr", background: "rgba(124,111,255,0.04)", borderTop: "1px solid rgba(124,111,255,0.15)" }}
+              className="grid px-5 py-4 items-center text-center border-t"
+              style={{
+                gridTemplateColumns: "2fr 1.1fr 0.9fr 1fr 1.2fr 1.2fr",
+                background: isLight ? "rgba(124,111,255,0.06)" : "rgba(124,111,255,0.04)",
+                borderColor: isLight ? "rgba(124,111,255,0.22)" : "rgba(124,111,255,0.15)",
+              }}
             >
-              <div className="text-left text-[12px] font-bold uppercase tracking-[1px]" style={{ fontFamily: "'Syne', sans-serif", color: "#7c6fff" }}>Total</div>
-              <div style={{ color: "#5a5f78", fontFamily: "'IBM Plex Mono', monospace", fontSize: 13 }} />
+              <div className="text-left text-[12px] font-bold uppercase tracking-[1px] text-[#7c6fff]" style={{ fontFamily: "'Syne', sans-serif" }}>Total</div>
+              <div />
               <div className="flex flex-col items-center">
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15 }}>{formatNumber(positionTotals.qty)}</span>
+                <span className="text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15 }}>{formatNumber(positionTotals.qty)}</span>
               </div>
-              <div style={{ color: "#5a5f78", fontFamily: "'IBM Plex Mono', monospace", fontSize: 13 }} />
+              <div />
               <div className="flex flex-col items-center">
-                <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15 }}>₹ {formatNumber(positionTotals.currentValue.toFixed(2))}</span>
-                <span className="text-[15px] mt-0.5" style={{ color: "#5a5f78" }}>₹ {formatNumber(positionTotals.investedForValue.toFixed(2))}</span>
+                <span className="text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 15 }}>₹ {formatNumber(positionTotals.currentValue.toFixed(2))}</span>
+                <span className={`text-[15px] mt-0.5 ${labelClass}`}>₹ {formatNumber(positionTotals.investedForValue.toFixed(2))}</span>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <span className="inline-flex items-center px-2.5 pt-1 rounded-full text-[15px] font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: positionTotals.pnl >= 0 ? "#22d38a" : "#ff4d6a" }}>₹ {formatNumber(positionTotals.pnl.toFixed(2))}</span>
-                <span className="text-[15px]" style={{ color: positionTotals.pnl >= 0 ? "#22d38a" : "#ff4d6a" }}>({positionTotals.investedForReturn > 0 ? `${((positionTotals.pnl / positionTotals.investedForReturn) * 100).toFixed(2)}%` : "—"})</span>
+                <span className="inline-flex items-center px-2.5 pt-1 rounded-full text-[15px] font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(positionTotals.pnl >= 0) }}>₹ {formatNumber(positionTotals.pnl.toFixed(2))}</span>
+                <span className="text-[15px]" style={{ color: profitColor(positionTotals.pnl >= 0) }}>({positionTotals.investedForReturn > 0 ? `${((positionTotals.pnl / positionTotals.investedForReturn) * 100).toFixed(2)}%` : "—"})</span>
               </div>
             </div>
           )}
 
           {!loading && positions.length === 0 && (
-            <div className="p-12 text-center" style={{ color: "#5a5f78", fontSize: 13 }}>No positions available</div>
+            <div className={`p-12 text-center text-[13px] ${labelClass}`}>No positions available</div>
           )}
         </div>
       </div>

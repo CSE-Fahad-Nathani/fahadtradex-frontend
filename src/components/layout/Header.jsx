@@ -1,4 +1,3 @@
-import { useLocation } from "react-router-dom";
 import { useUserStore } from "../../store/userStore";
 import { Search } from "lucide-react";
 import { motion } from "framer-motion";
@@ -7,24 +6,23 @@ import { useState, useRef, useEffect } from "react";
 import { formatNumber } from "../../utils/formatNumber";
 import MarketStatusIndicator from "../common/MarketStatusIndicator";
 import ThemeToggle from "../common/ThemeToggle";
+import { useThemeStore } from "../../store/themeStore";
 
 function Header( {triggerWatchlistUpdate, setTriggerWatchlistUpdate, triggerPositionUpdate, setTriggerPositionUpdate}) {
-  const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [userName] = useState(() => localStorage.getItem("userName") || "Trader");
+  const theme = useThemeStore((s) => s.theme);
+  const isLight = theme === "light";
 
   const user = useUserStore((s) => s.user);
-
-  const getTitle = () => {
-    if (location.pathname.includes("watchlist")) return "Watchlist";
-    if (location.pathname.includes("portfolio")) return "Portfolio";
-    if (location.pathname.includes("position")) return "Positions";
-    if (location.pathname.includes("orderHistory")) return "Order History";
-    if (location.pathname.includes("orders")) return "Orders";
-    if (location.pathname.includes("stock")) return "Stock";
-    return "Dashboard";
-  };
-
+  const displayName = userName.trim().split(/\s+/)[0] || "Trader";
+  const greeting = (() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  })();
 
   const wrapperRef = useRef(null);
 
@@ -53,9 +51,37 @@ useEffect(() => {
     <div className="h-11 sm:h-16 border-b border-borderColor flex items-center justify-between px-2.5 sm:px-6 bg-primaryBg gap-2 sm:gap-4">
 
       {/* LEFT */}
-      <h1 className="text-xs sm:text-lg font-semibold tracking-wide shrink-0 text-textPrimary">
-        {getTitle()}
-      </h1>
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 min-w-0 max-w-[34vw] sm:max-w-[220px]">
+        <div
+          className="hidden sm:flex h-9 w-9 items-center justify-center rounded-full border shrink-0 text-sm font-bold"
+          style={{
+            fontFamily: "'Syne', sans-serif",
+            color: "#7c6fff",
+            background: isLight ? "rgba(124,111,255,0.1)" : "rgba(124,111,255,0.15)",
+            borderColor: isLight ? "rgba(124,111,255,0.25)" : "rgba(124,111,255,0.3)",
+          }}
+        >
+          {displayName.charAt(0).toUpperCase()}
+        </div>
+        <div className="min-w-0 leading-tight">
+          <p className="text-[8px] sm:text-[10px] font-medium uppercase tracking-[0.14em] text-textMuted truncate">
+            <span className="hidden sm:inline">{greeting},</span>
+            <span className="sm:hidden">Welcome,</span>
+          </p>
+          <p
+            className="text-xs sm:text-base font-extrabold truncate bg-clip-text text-transparent"
+            style={{
+              fontFamily: "'Syne', sans-serif",
+              letterSpacing: "-0.3px",
+              backgroundImage: isLight
+                ? "linear-gradient(135deg, #0f172a 0%, #4338ca 60%, #7c3aed 100%)"
+                : "linear-gradient(135deg, #f8fafc 0%, #c4b5fd 55%, #7c6fff 100%)",
+            }}
+          >
+            {displayName}
+          </p>
+        </div>
+      </div>
 
       {/* CENTER - Search */}
       <motion.div
@@ -82,7 +108,7 @@ useEffect(() => {
 
       {/* RIGHT */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-        {/* <ThemeToggle /> */}
+        <ThemeToggle />
         <div className="hidden sm:block">
           <MarketStatusIndicator />
         </div>

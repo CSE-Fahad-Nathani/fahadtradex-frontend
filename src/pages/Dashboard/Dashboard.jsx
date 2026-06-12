@@ -19,6 +19,7 @@ import { useMarketStore } from "../../store/marketStore";
 import { usePnlHistoryStore } from "../../store/pnlHistoryStore";
 import { useUserStore } from "../../store/userStore";
 import { formatNumber } from "../../utils/formatNumber";
+import { useThemeStore } from "../../store/themeStore";
 
 const ALLOCATION_COLORS = {
   margin: "#38bdf8",
@@ -537,7 +538,7 @@ function Dashboard() {
               <div key={`${row.code}-${row.exch}`} className="rounded-lg border border-borderColor/60 bg-black/20 p-2.5">
                 <div className="flex items-center justify-between mb-1.5">
                   <div>
-                    <div className="text-[10px] font-semibold text-white truncate max-w-[140px]" style={{ fontFamily: "'Syne', sans-serif" }}>{row.name}</div>
+                    <div className="text-[10px] font-semibold text-textPrimary truncate max-w-[140px]" style={{ fontFamily: "'Syne', sans-serif" }}>{row.name}</div>
                     <div className="text-[8px] text-gray-500">{row.symbol} | {row.exch === "N" ? "NSE" : row.exch === "B" ? "BSE" : "MCX"}</div>
                   </div>
                   <div
@@ -580,9 +581,9 @@ function Dashboard() {
               ) : (
                 topHoldings.map((row) => (
                   <tr key={`${row.code}-${row.exch}`} className="border-b border-borderColor/70">
-                    <td className="py-3 text-gray-100">
-                      <div className="text-[14px] font-semibold tracking-tight" style={{ fontFamily: "'Syne', sans-serif", color: "#f0f2f8" }}>{row.name}</div>
-                      <div className="text-[12px]" style={{ color: "#5a5f78" }}>
+                    <td className="py-3 text-textPrimary">
+                      <div className="text-[14px] font-semibold tracking-tight text-textPrimary" style={{ fontFamily: "'Syne', sans-serif" }}>{row.name}</div>
+                      <div className="text-[12px] text-textSubtle">
                         {row.symbol} | {row.exch === "N" ? "NSE" : row.exch === "B" ? "BSE" : "MCX"}</div>
                     </td>
                     <td className="py-3 text-right text-gray-200 text-[14px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{row.qty}</td>
@@ -606,24 +607,39 @@ function Dashboard() {
   );
 }
 
-const KpiCard = ({ title, value, tone, sub }) => (
-  <div className="rounded-lg sm:rounded-xl border border-borderColor bg-cardBg p-2.5 sm:p-4">
-    <p className="text-[8px] sm:text-xs text-gray-400">{title}</p>
-    <p
-      className={`mt-1 sm:mt-2 text-sm sm:text-2xl md:text-[26px] font-semibold tracking-tight ${tone}`}
-      style={{
-        fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
-        letterSpacing: "-0.3px",
-      }}
-    >
-      ₹ {formatNumber(Number(value || 0).toFixed(2))}
-    </p>
-    {sub ? (
-      <p className="text-[8px] sm:text-[11px] mt-0.5 sm:mt-1.5 text-gray-400 font-medium">
-        {sub}
+const LIGHT_KPI_TONES = {
+  "text-white": "text-slate-900",
+  "text-cyan-300": "text-cyan-700",
+  "text-violet-300": "text-violet-700",
+  "text-amber-300": "text-amber-700",
+  "text-green-400": "text-green-700",
+  "text-red-400": "text-red-700",
+};
+
+const KpiCard = ({ title, value, tone, sub }) => {
+  const theme = useThemeStore((s) => s.theme);
+  const isLight = theme === "light";
+  const valueTone = isLight ? (LIGHT_KPI_TONES[tone] ?? tone) : tone;
+
+  return (
+    <div className="rounded-lg sm:rounded-xl border border-borderColor bg-cardBg p-2.5 sm:p-4">
+      <p className={`text-[8px] sm:text-xs ${isLight ? "text-slate-600" : "text-gray-400"}`}>{title}</p>
+      <p
+        className={`mt-1 sm:mt-2 text-sm sm:text-2xl md:text-[26px] font-semibold tracking-tight ${valueTone}`}
+        style={{
+          fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace",
+          letterSpacing: "-0.3px",
+        }}
+      >
+        ₹ {formatNumber(Number(value || 0).toFixed(2))}
       </p>
-    ) : null}
-  </div>
-);
+      {sub ? (
+        <p className={`text-[8px] sm:text-[11px] mt-0.5 sm:mt-1.5 font-medium ${isLight ? "text-slate-600" : "text-gray-400"}`}>
+          {sub}
+        </p>
+      ) : null}
+    </div>
+  );
+};
 
 export default Dashboard;

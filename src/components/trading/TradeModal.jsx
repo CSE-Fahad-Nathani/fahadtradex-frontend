@@ -8,6 +8,7 @@ import { useUserStore } from "../../store/userStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, AlertTriangle, ArrowLeft, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useThemeStore } from "../../store/themeStore";
 
 const TradeModal = ({
   isOpen,
@@ -36,6 +37,16 @@ const TradeModal = ({
   const isMCX = exchange === "M";
   const { showToast } = useToast();
   const user = useUserStore((s) => s.user);
+  const isLight = useThemeStore((s) => s.theme) === "light";
+
+  const profitColor = (positive) =>
+    isLight ? (positive ? "#15803d" : "#b91c1c") : positive ? "#22d38a" : "#ff4d6a";
+  const labelClass = isLight ? "text-slate-600" : "text-textSubtle";
+  const valueTextColor = isLight ? "#334155" : "#c8cad8";
+  const emphasisTextColor = isLight ? "#0f172a" : "#e0e2ea";
+  const mutedTextColor = isLight ? "#64748b" : "#6b7090";
+  const neutralSurface = isLight ? "var(--color-surface-subtle)" : "rgba(255,255,255,0.04)";
+  const neutralBorder = isLight ? "var(--color-border)" : "rgba(255,255,255,0.08)";
 
   const isBuy = action === "BUY";
   const accentColor = isBuy ? "#22d38a" : "#ff4d6a";
@@ -155,7 +166,7 @@ const TradeModal = ({
                   >
                     {isBuy ? "Buy" : "Sell"}
                   </span>
-                  <span className="text-[8px] sm:text-xs font-medium px-2 py-0.5 sm:py-1 rounded-md border border-borderColor text-[#5a5f78]">
+                  <span className={`text-[8px] sm:text-xs font-medium px-2 py-0.5 sm:py-1 rounded-md border border-borderColor ${labelClass}`}>
                     {exchangeLabel}
                   </span>
                   <span
@@ -165,12 +176,12 @@ const TradeModal = ({
                     {symbol}
                   </span>
                 </div>
-                <p className="text-[11px] sm:text-sm font-medium truncate" style={{ color: "#9ca3af" }}>{name}</p>
+                <p className={`text-[11px] sm:text-sm font-medium truncate ${labelClass}`}>{name}</p>
               </div>
 
               <button
                 onClick={() => { onClose(); setStep("FORM"); }}
-                className="flex-shrink-0 p-1.5 sm:p-2 rounded-lg border border-borderColor text-[#5a5f78] hover:text-white hover:border-white/20 transition-colors"
+                className={`flex-shrink-0 p-1.5 sm:p-2 rounded-lg border border-borderColor ${labelClass} hover:text-textPrimary hover:bg-[var(--color-row-hover)] transition-colors`}
               >
                 <X size={14} className="sm:hidden" />
                 <X size={16} className="hidden sm:block" />
@@ -181,12 +192,12 @@ const TradeModal = ({
             <div className="rounded-xl border border-borderColor bg-[var(--color-surface-elevated)] p-3 sm:p-5 mb-3 sm:mb-6">
               <div className="flex items-end justify-between mb-3 sm:mb-4">
                 <div>
-                  <p className="text-[8px] sm:text-[10px] font-medium uppercase tracking-[0.12em] mb-1" style={{ color: "#5a5f78" }}>
+                  <p className={`text-[8px] sm:text-[10px] font-medium uppercase tracking-[0.12em] mb-1 ${labelClass}`}>
                     Live Price
                   </p>
                   <p
                     className="text-xl sm:text-3xl font-semibold tracking-tight"
-                    style={{ fontFamily: "'IBM Plex Mono', monospace", color: isUp ? "#22d38a" : "#ff4d6a" }}
+                    style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(isUp) }}
                   >
                     ₹{formatNumber(price) || "—"}
                   </p>
@@ -194,11 +205,11 @@ const TradeModal = ({
                 <div className="text-right">
                   <p
                     className="text-[10px] sm:text-sm font-semibold"
-                    style={{ fontFamily: "'IBM Plex Mono', monospace", color: isUp ? "#22d38a" : "#ff4d6a" }}
+                    style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(isUp) }}
                   >
                     {price ? `${isUp ? "+" : ""}${change.toFixed(2)} (${changePercent.toFixed(2)}%)` : "—"}
                   </p>
-                  <p className="text-[8px] sm:text-[10px] mt-1" style={{ color: "#4a4f68" }}>vs prev. close</p>
+                  <p className={`text-[8px] sm:text-[10px] mt-1 ${labelClass}`}>vs prev. close</p>
                 </div>
               </div>
 
@@ -211,10 +222,10 @@ const TradeModal = ({
                     { label: "Prev", value: formatNumber(live.PClose) },
                   ].map((stat) => (
                     <div key={stat.label} className="text-center py-2 sm:py-2.5 px-1 bg-cardBg">
-                      <p className="text-[7px] sm:text-[9px] font-medium uppercase tracking-wide mb-1" style={{ color: "#5a5f78" }}>
+                      <p className={`text-[7px] sm:text-[9px] font-medium uppercase tracking-wide mb-1 ${labelClass}`}>
                         {stat.label}
                       </p>
-                      <p className="text-[9px] sm:text-sm font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#e0e2ea" }}>
+                      <p className="text-[9px] sm:text-sm font-medium text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
                         {stat.value}
                       </p>
                     </div>
@@ -228,13 +239,13 @@ const TradeModal = ({
               <>
                 <div className="mb-2 sm:mb-4">
                   <div className="flex items-center justify-between mb-1 sm:mb-2">
-                    <label className="text-[9px] sm:text-sm font-semibold" style={{ color: "#c0c4d6" }}>
+                    <label className={`text-[9px] sm:text-sm font-semibold ${isLight ? "text-slate-700" : "text-textPrimary"}`}>
                       {isMCX ? "Number of Lots" : "Quantity"}
                     </label>
                     {action === "SELL" && (
-                      <span className="text-[8px] sm:text-xs px-1.5 sm:px-2.5 py-px sm:py-1 rounded sm:rounded-lg font-medium"
-                        style={{ background: "rgba(255,255,255,0.05)", color: "#888", border: "1px solid rgba(255,255,255,0.08)" }}>
-                        Max: <span style={{ color: "#e0e2ea", fontFamily: "'IBM Plex Mono', monospace" }}>
+                      <span className={`text-[8px] sm:text-xs px-1.5 sm:px-2.5 py-px sm:py-1 rounded sm:rounded-lg font-medium border border-borderColor ${labelClass}`}
+                        style={{ background: neutralSurface }}>
+                        Max: <span className="text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
                           {isMCX ? lots : totalQty}
                         </span>
                       </span>
@@ -244,8 +255,8 @@ const TradeModal = ({
                   <div className="flex items-center gap-1 sm:gap-2">
                     <button
                       onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                      className="w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-md sm:rounded-xl text-base sm:text-xl font-bold transition-all"
-                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#888" }}
+                      className={`w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-md sm:rounded-xl text-base sm:text-xl font-bold transition-all border border-borderColor ${labelClass}`}
+                      style={{ background: neutralSurface }}
                     >
                       −
                     </button>
@@ -262,22 +273,15 @@ const TradeModal = ({
                         }
                         setQuantity(val);
                       }}
-                      className="flex-1 text-center outline-none transition-all duration-200 text-sm sm:text-xl font-bold"
-                      style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 8,
-                        padding: "5px 8px",
-                        fontFamily: "'IBM Plex Mono', monospace",
-                        color: "#f0f2f8",
-                      }}
+                      className="flex-1 text-center outline-none transition-all duration-200 text-sm sm:text-xl font-bold bg-inputBg border border-borderColor text-textPrimary rounded-lg py-1.5 px-2"
+                      style={{ fontFamily: "'IBM Plex Mono', monospace" }}
                       onFocus={(e) => {
                         e.target.style.border = `1px solid ${accentColor}60`;
                         e.target.style.background = `${accentColor}08`;
                       }}
                       onBlur={(e) => {
-                        e.target.style.border = "1px solid rgba(255,255,255,0.1)";
-                        e.target.style.background = "rgba(255,255,255,0.04)";
+                        e.target.style.border = neutralBorder;
+                        e.target.style.background = isLight ? "var(--color-input-bg)" : neutralSurface;
                       }}
                     />
 
@@ -290,16 +294,16 @@ const TradeModal = ({
                         }
                         setQuantity(q => q + 1);
                       }}
-                      className="w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-md sm:rounded-xl text-base sm:text-xl font-bold transition-all"
-                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "#888" }}
+                      className={`w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-md sm:rounded-xl text-base sm:text-xl font-bold transition-all border border-borderColor ${labelClass}`}
+                      style={{ background: neutralSurface }}
                     >
                       +
                     </button>
                   </div>
 
                   {isMCX && (
-                    <p className="text-[8px] sm:text-xs mt-1 sm:mt-2" style={{ color: "#5a5f78" }}>
-                      1 lot = <span style={{ color: "#e0e2ea", fontFamily: "'IBM Plex Mono', monospace" }}>{lotSize} units</span>
+                    <p className={`text-[8px] sm:text-xs mt-1 sm:mt-2 ${labelClass}`}>
+                      1 lot = <span className="text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{lotSize} units</span>
                     </p>
                   )}
                 </div>
@@ -317,7 +321,7 @@ const TradeModal = ({
 
                 <div className="rounded-xl mb-3 sm:mb-6 overflow-hidden border border-borderColor">
                   <div className="px-3 sm:px-4 py-2 sm:py-2.5 border-b border-borderColor bg-[var(--color-surface-elevated)]">
-                    <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#5a5f78" }}>Order Summary</p>
+                    <p className={`text-[8px] sm:text-[10px] font-semibold uppercase tracking-[0.12em] ${labelClass}`}>Order Summary</p>
                   </div>
                   <div className="px-3 sm:px-5 py-3 sm:py-4 space-y-2 sm:space-y-3.5 bg-cardBg">
                     {[
@@ -326,38 +330,38 @@ const TradeModal = ({
                       ...(isMCX ? [{ label: "Contract Value", value: `₹ ${formatNumber(contractValue.toFixed(2))}` }] : []),
                     ].map((row) => (
                       <div key={row.label} className="flex justify-between items-center">
-                        <span className="text-[9px] sm:text-sm" style={{ color: "#6b7090" }}>{row.label}</span>
-                        <span className="text-[9px] sm:text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#c8cad8" }}>
+                        <span className="text-[9px] sm:text-sm" style={{ color: mutedTextColor }}>{row.label}</span>
+                        <span className="text-[9px] sm:text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: valueTextColor }}>
                           {row.value}
                         </span>
                       </div>
                     ))}
 
-                    <div className="pt-1.5 mt-0.5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div className="pt-1.5 mt-0.5 border-t border-borderColor">
                       <div className="flex justify-between items-center">
-                        <span className="text-[9px] sm:text-base font-bold" style={{ color: "#e0e2ea" }}>
+                        <span className="text-[9px] sm:text-base font-bold" style={{ color: emphasisTextColor }}>
                           {isMCX ? (isBuy ? "Margin Required" : "You Receive") : (isBuy ? "Total" : "You Receive")}
                         </span>
                         <span className="text-sm sm:text-xl font-bold" style={{
                           fontFamily: "'IBM Plex Mono', monospace",
-                          color: insufficientBalance ? "#ff4d6a" : (isBuy ? accentColor : "#22d38a")
+                          color: insufficientBalance ? profitColor(false) : (isBuy ? accentColor : profitColor(true))
                         }}>
                           ₹ {formatNumber(total)}
                         </span>
                       </div>
                       {insufficientBalance && (
-                        <p className="text-[8px] sm:text-xs mt-0.5 sm:mt-1.5 text-right" style={{ color: "#ff4d6a" }}>
+                        <p className="text-[8px] sm:text-xs mt-0.5 sm:mt-1.5 text-right" style={{ color: profitColor(false) }}>
                           ⚠ Insufficient (₹{formatNumber(user?.balance?.toFixed(2))})
                         </p>
                       )}
                     </div>
 
                     {isMCX && action === "SELL" && (
-                      <div className="flex justify-between items-center pt-1.5" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                        <span className="text-[9px] sm:text-sm" style={{ color: "#6b7090" }}>Est. P&L</span>
+                      <div className="flex justify-between items-center pt-1.5 border-t border-borderColor">
+                        <span className="text-[9px] sm:text-sm" style={{ color: mutedTextColor }}>Est. P&L</span>
                         <span className="text-[10px] sm:text-base font-bold" style={{
                           fontFamily: "'IBM Plex Mono', monospace",
-                          color: pnl >= 0 ? "#22d38a" : "#ff4d6a"
+                          color: profitColor(pnl >= 0)
                         }}>
                           {pnl >= 0 ? "+" : ""}₹ {formatNumber(pnl.toFixed(2))}
                         </span>
@@ -367,10 +371,10 @@ const TradeModal = ({
                 </div>
 
                 <div className="flex items-center justify-between mb-2 sm:mb-5 px-0.5">
-                  <span className="text-[9px] sm:text-sm" style={{ color: "#5a5f78" }}>Balance</span>
+                  <span className={`text-[9px] sm:text-sm ${labelClass}`}>Balance</span>
                   <span className="text-[9px] sm:text-sm font-semibold" style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    color: insufficientBalance ? "#ff4d6a" : "#22d38a"
+                    color: insufficientBalance ? profitColor(false) : profitColor(true)
                   }}>
                     ₹ {formatNumber(user?.balance?.toFixed(2))}
                   </span>
@@ -379,12 +383,8 @@ const TradeModal = ({
                 <div className="flex gap-1.5 sm:gap-3">
                   <button
                     onClick={onClose}
-                    className="flex-1 py-2 sm:py-3.5 text-[9px] sm:text-sm font-semibold rounded-md sm:rounded-xl transition-all duration-150"
-                    style={{
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      color: "#6b7090",
-                    }}
+                    className={`flex-1 py-2 sm:py-3.5 text-[9px] sm:text-sm font-semibold rounded-md sm:rounded-xl transition-all duration-150 border border-borderColor hover:bg-[var(--color-row-hover)] ${labelClass}`}
+                    style={{ background: neutralSurface }}
                   >
                     Cancel
                   </button>
@@ -393,9 +393,9 @@ const TradeModal = ({
                     onClick={() => setStep("PREVIEW")}
                     className="flex-1 py-2 sm:py-3.5 text-[9px] sm:text-sm font-bold rounded-md sm:rounded-xl transition-all duration-200"
                     style={{
-                      background: (!price || quantity <= 0 || insufficientBalance) ? "rgba(255,255,255,0.05)" : accentColor,
-                      border: `1px solid ${(!price || quantity <= 0 || insufficientBalance) ? "rgba(255,255,255,0.08)" : accentColor}`,
-                      color: (!price || quantity <= 0 || insufficientBalance) ? "#444" : (isBuy ? "#000" : "#fff"),
+                      background: (!price || quantity <= 0 || insufficientBalance) ? neutralSurface : accentColor,
+                      border: `1px solid ${(!price || quantity <= 0 || insufficientBalance) ? neutralBorder : accentColor}`,
+                      color: (!price || quantity <= 0 || insufficientBalance) ? (isLight ? "#94a3b8" : "#444") : (isBuy ? "#000" : "#fff"),
                       cursor: (!price || quantity <= 0 || insufficientBalance) ? "not-allowed" : "pointer",
                     }}
                   >
@@ -418,7 +418,7 @@ const TradeModal = ({
                     <p className="text-[10px] sm:text-sm font-semibold" style={{ color: accentColor }}>
                       Confirm {isBuy ? "purchase" : "sale"}
                     </p>
-                    <p className="text-[8px] sm:text-xs mt-0.5" style={{ color: "#5a5f78" }}>
+                    <p className={`text-[8px] sm:text-xs mt-0.5 ${labelClass}`}>
                       Review before placing.
                     </p>
                   </div>
@@ -426,7 +426,7 @@ const TradeModal = ({
 
                 <div className="rounded-xl mb-3 sm:mb-6 overflow-hidden border border-borderColor">
                   <div className="px-3 sm:px-4 py-2 sm:py-2.5 border-b border-borderColor bg-[var(--color-surface-elevated)]">
-                    <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: "#5a5f78" }}>Order Details</p>
+                    <p className={`text-[8px] sm:text-[10px] font-semibold uppercase tracking-[0.12em] ${labelClass}`}>Order Details</p>
                   </div>
                   <div className="px-3 sm:px-5 py-3 sm:py-4 space-y-2 sm:space-y-3.5 bg-cardBg">
                     {[
@@ -438,21 +438,21 @@ const TradeModal = ({
                       ...(isMCX ? [{ label: "Contract", value: `₹ ${formatNumber(contractValue.toFixed(2))}` }] : []),
                     ].map((row) => (
                       <div key={row.label} className="flex justify-between items-center">
-                        <span className="text-[9px] sm:text-sm" style={{ color: "#6b7090" }}>{row.label}</span>
-                        <span className="text-[9px] sm:text-sm" style={{ fontFamily: "'IBM Plex Mono', monospace", color: row.valueColor || "#c8cad8", fontWeight: row.bold ? 700 : 500 }}>
+                        <span className="text-[9px] sm:text-sm" style={{ color: mutedTextColor }}>{row.label}</span>
+                        <span className="text-[9px] sm:text-sm" style={{ fontFamily: "'IBM Plex Mono', monospace", color: row.valueColor || valueTextColor, fontWeight: row.bold ? 700 : 500 }}>
                           {row.value}
                         </span>
                       </div>
                     ))}
 
-                    <div className="pt-1.5 sm:pt-3 mt-0.5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                    <div className="pt-1.5 sm:pt-3 mt-0.5 border-t border-borderColor">
                       <div className="flex justify-between items-center">
-                        <span className="text-[9px] sm:text-base font-bold" style={{ color: "#e0e2ea" }}>
+                        <span className="text-[9px] sm:text-base font-bold" style={{ color: emphasisTextColor }}>
                           {isMCX ? (isBuy ? "Margin" : "Receive") : (isBuy ? "Total" : "Receive")}
                         </span>
                         <span className="text-sm sm:text-2xl font-bold" style={{
                           fontFamily: "'IBM Plex Mono', monospace",
-                          color: insufficientBalance ? "#ff4d6a" : (isBuy ? accentColor : "#22d38a")
+                          color: insufficientBalance ? profitColor(false) : (isBuy ? accentColor : profitColor(true))
                         }}>
                           ₹ {formatNumber(total)}
                         </span>
@@ -462,12 +462,11 @@ const TradeModal = ({
                 </div>
 
                 <div className="flex items-center justify-between mb-2 sm:mb-5 px-0.5">
-                  <span className="text-[9px] sm:text-sm" style={{ color: "#5a5f78" }}>
+                  <span className={`text-[9px] sm:text-sm ${labelClass}`}>
                     {isBuy ? "After Order" : "After Sale"}
                   </span>
-                  <span className="text-[9px] sm:text-sm font-semibold" style={{
+                  <span className="text-[9px] sm:text-sm font-semibold text-textPrimary" style={{
                     fontFamily: "'IBM Plex Mono', monospace",
-                    color: "#e0e2ea"
                   }}>
                     ₹ {formatNumber((isBuy
                       ? (user?.balance || 0) - total
@@ -479,12 +478,8 @@ const TradeModal = ({
                 <div className="flex gap-1.5 sm:gap-3">
                   <button
                     onClick={() => setStep("FORM")}
-                    className="flex-1 py-2 sm:py-3.5 text-[9px] sm:text-sm font-semibold rounded-md sm:rounded-xl transition-all duration-150 flex items-center justify-center gap-1 sm:gap-2"
-                    style={{
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      color: "#6b7090",
-                    }}
+                    className={`flex-1 py-2 sm:py-3.5 text-[9px] sm:text-sm font-semibold rounded-md sm:rounded-xl transition-all duration-150 flex items-center justify-center gap-1 sm:gap-2 border border-borderColor hover:bg-[var(--color-row-hover)] ${labelClass}`}
+                    style={{ background: neutralSurface }}
                   >
                     <ArrowLeft size={10} className="sm:hidden" />
                     <ArrowLeft size={14} className="hidden sm:block" />
@@ -495,9 +490,9 @@ const TradeModal = ({
                     disabled={loading}
                     className="flex-1 py-2 sm:py-3.5 text-[9px] sm:text-sm font-bold rounded-md sm:rounded-xl transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2"
                     style={{
-                      background: loading ? "rgba(255,255,255,0.05)" : accentColor,
-                      border: `1px solid ${loading ? "rgba(255,255,255,0.08)" : accentColor}`,
-                      color: loading ? "#444" : "#000",
+                      background: loading ? neutralSurface : accentColor,
+                      border: `1px solid ${loading ? neutralBorder : accentColor}`,
+                      color: loading ? (isLight ? "#94a3b8" : "#444") : "#000",
                       cursor: loading ? "not-allowed" : "pointer",
                     }}
                   >

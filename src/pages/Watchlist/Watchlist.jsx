@@ -13,9 +13,11 @@ import { fetchUserData } from "../../services/user.service";
 
 
 
+const DEFAULT_WATCHLIST_NAME = "First Watchlist";
+
 function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
   const [watchlists, setWatchlists] = useState({});
-  const [activeTab, setActiveTab] = useState("");
+  const [activeTab, setActiveTab] = useState(DEFAULT_WATCHLIST_NAME);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
@@ -33,7 +35,6 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
 
   const { showToast } = useToast();
 
-  const staticTabs = ["Top Growth", "Nifty50"];
   const PAGE_SIZES = [5, 10, 20, 50, 100];
   const liveData = useMarketStore((s) => s.data);
 
@@ -77,7 +78,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
           setWatchlists(sortedData);
 
           const firstKey = Object.keys(result.data)[0];
-          setActiveTab(firstKey || "Top Growth");
+          setActiveTab(firstKey || DEFAULT_WATCHLIST_NAME);
         }
       } catch (err) {
         console.error("Fetch watchlist error:", err);
@@ -93,12 +94,14 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
     fetchUserData();
   }, []);
 
-  // 🔥 Combine tabs
-  const dynamicTabs = Object.keys(watchlists);
-  const tabs = [...dynamicTabs, ...staticTabs];
+  const tabs =
+    Object.keys(watchlists).length > 0
+      ? Object.keys(watchlists)
+      : [DEFAULT_WATCHLIST_NAME];
+  const watchlistTitle = activeTab || DEFAULT_WATCHLIST_NAME;
 
   // 🔥 Current data
-  const currentData = watchlists[activeTab] || [];
+  const currentData = watchlists[watchlistTitle] || [];
 
   const filteredData = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -132,7 +135,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
 
   // ✅ Prepare scrips for WS
   const scrips =
-    !staticTabs.includes(activeTab) && currentData.length > 0
+    currentData.length > 0
       ? currentData.map((item) => ({
           Exch: item.exchange,
           ExchType: item.exchangeType || "C",
@@ -299,33 +302,26 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
             className="text-[9px] sm:text-[11px] font-semibold uppercase tracking-[1.5px] shrink-0"
             style={{ color: "#5a5f78" }}
           >
-            {activeTab} — Value Over Time
+            {watchlistTitle} — Value Over Time
           </h2>
           <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.04)" }} />
         </div>
-        {!staticTabs.includes(activeTab) && (
-          <div className="sm:hidden relative">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#5a5f78" }} />
+        <div className="sm:hidden relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-textSubtle" />
             <input
               type="text"
               placeholder="Search by name or symbol..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-[11px] rounded-lg outline-none"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#f0f2f8" }}
+              className="w-full pl-9 pr-3 py-2 text-[11px] rounded-lg outline-none bg-inputBg border border-borderColor text-textPrimary placeholder:text-textMuted focus:border-[rgba(124,111,255,0.4)] transition-colors"
             />
           </div>
-        )}
       </div>
   
       {/* ── Mobile Card Layout ── */}
            <div className="sm:hidden overflow-hidden">
         <div style={{ maxHeight: "75vh", overflow: "auto" }} className="space-y-2 px-0.5">
-          {staticTabs.includes(activeTab) && (
-            <div className="p-10 text-center text-[10px] rounded-xl border border-borderColor bg-cardBg" style={{ color: "#5a5f78" }}>{activeTab} data coming soon...</div>
-          )}
-
-          {!staticTabs.includes(activeTab) && loading && (
+          {loading && (
             <div className="animate-pulse space-y-2">
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="rounded-xl border border-borderColor/40 bg-cardBg p-3.5">
@@ -338,7 +334,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
             </div>
           )}
 
-          {!staticTabs.includes(activeTab) && !loading && paginatedData.map((item, i) => {
+          {!loading && paginatedData.map((item, i) => {
             const token = String(item.scripCode);
             const live = liveData[token];
             const initialPrice = Number(item.initialPrice);
@@ -360,7 +356,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
               <div
                 key={item.stockId || i}
                 onClick={() => navigate(`/stock/${item.exchange}/${item.exchangeType}/${item.scripCode}/${item.symbol}`)}
-                className="rounded-xl border border-borderColor/60 bg-cardBg active:bg-white/[0.02] cursor-pointer overflow-hidden"
+                className="rounded-xl border border-borderColor/60 bg-cardBg active:bg-[var(--color-row-hover)] cursor-pointer overflow-hidden"
                 style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.2)", margin:"10px" }}
               >
                 {/* Main content */}
@@ -476,7 +472,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
             );
           })}
 
-          {!staticTabs.includes(activeTab) && !loading && filteredData.length === 0 && (
+          {!loading && filteredData.length === 0 && (
             <div className="p-10 text-center rounded-xl border border-borderColor bg-cardBg">
               <p className="text-[10px] font-medium" style={{ color: "#5a5f78" }}>
                 {searchQuery.trim() ? "No stocks match your search" : "No stocks in this watchlist"}
@@ -484,10 +480,10 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
             </div>
           )}
 
-          {!staticTabs.includes(activeTab) && !loading && filteredData.length > 0 && (
+          {!loading && filteredData.length > 0 && (
             <div className="flex flex-col gap-2 pt-2 pb-1 px-0.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[9px]" style={{ color: "#5a5f78" }}>
+                <span className="text-[9px] text-textSubtle">
                   {filteredData.length === 0
                     ? "0 results"
                     : `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, filteredData.length)} of ${filteredData.length}`}
@@ -496,17 +492,15 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                   <button
                     disabled={currentPage <= 1}
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    className="px-2 py-1 text-[9px] rounded-md border disabled:opacity-40"
-                    style={{ borderColor: "rgba(255,255,255,0.08)", color: "#9ca3af" }}
+                    className="px-2 py-1 text-[9px] rounded-md border border-borderColor text-textMuted disabled:opacity-40 hover:text-textPrimary hover:bg-[var(--color-row-hover)] transition-colors"
                   >
                     Prev
                   </button>
-                  <span className="text-[9px] px-1" style={{ color: "#5a5f78" }}>{currentPage}/{totalPages}</span>
+                  <span className="text-[9px] px-1 text-textSubtle">{currentPage}/{totalPages}</span>
                   <button
                     disabled={currentPage >= totalPages}
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    className="px-2 py-1 text-[9px] rounded-md border disabled:opacity-40"
-                    style={{ borderColor: "rgba(255,255,255,0.08)", color: "#9ca3af" }}
+                    className="px-2 py-1 text-[9px] rounded-md border border-borderColor text-textMuted disabled:opacity-40 hover:text-textPrimary hover:bg-[var(--color-row-hover)] transition-colors"
                   >
                     Next
                   </button>
@@ -541,19 +535,17 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
         <div className="min-w-[900px]">
 
           {/* Search toolbar */}
-          {!staticTabs.includes(activeTab) && (
-            <div
-              className="flex items-center justify-between gap-3 px-5 py-3 border-b border-borderColor bg-[var(--color-surface-subtle)]"
-            >
+          <div
+            className="flex items-center justify-between gap-3 px-5 py-3 border-b border-borderColor bg-[var(--color-surface-subtle)]"
+          >
               <div className="relative flex-1 max-w-md">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#5a5f78" }} />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-textSubtle" />
                 <input
                   type="text"
                   placeholder="Search by name or symbol..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 text-[12px] rounded-lg outline-none focus:border-[rgba(124,111,255,0.4)] transition-colors"
-                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", color: "#f0f2f8" }}
+                  className="w-full pl-9 pr-3 py-2 text-[12px] rounded-lg outline-none bg-inputBg border border-borderColor text-textPrimary placeholder:text-textMuted focus:border-[rgba(124,111,255,0.4)] transition-colors"
                 />
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
@@ -574,7 +566,6 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                 ))}
               </div>
             </div>
-          )}
 
           {/* Header */}
           <div
@@ -604,11 +595,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
 
           {/* Body */}
           <div style={{ maxHeight: "55vh", overflow: "auto" }}>
-            {staticTabs.includes(activeTab) && (
-              <div className="p-12 text-center text-[13px]" style={{ color: "#5a5f78" }}>{activeTab} data coming soon...</div>
-            )}
-
-            {!staticTabs.includes(activeTab) && loading && (
+            {loading && (
               <div className="animate-pulse">
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="grid px-5 py-4 border-b border-borderColor" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1fr 1fr" }}>
@@ -627,7 +614,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
               </div>
             )}
 
-            {!staticTabs.includes(activeTab) && !loading &&
+            {!loading &&
               paginatedData.map((item, i) => {
                 const token = String(item.scripCode);
                 const live = liveData[token];
@@ -648,14 +635,14 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                   <div
                     key={item.stockId || i}
                     onClick={() => navigate(`/stock/${item.exchange}/${item.exchangeType}/${item.scripCode}/${item.symbol}`)}
-                    className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 hover:bg-white/[0.025] cursor-pointer"
+                    className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 hover:bg-[var(--color-row-hover)] cursor-pointer"
                     style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1fr 1fr" }}
                   >
                     <div className="text-left flex flex-col justify-center">
-                      <p className="text-[13px] font-semibold tracking-tight" style={{ fontFamily: "'Syne', sans-serif", color: "#f0f2f8" }}>{item.name}</p>
+                      <p className="text-[13px] font-semibold tracking-tight text-textPrimary" style={{ fontFamily: "'Syne', sans-serif" }}>{item.name}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[9px] font-semibold tracking-[0.5px] rounded px-1.5 py-0.5" style={{ background: "rgba(124,111,255,0.12)", color: "#7c6fff" }}>{exchLabel}</span>
-                        <span className="text-[11px] font-medium" style={{ color: "#5a5f78" }}>{item.symbol}</span>
+                        <span className="text-[11px] font-medium text-textSubtle">{item.symbol}</span>
                         <button onClick={(e) => { e.stopPropagation(); setTargetStock(item); setIsTargetModalOpen(true); }} className="text-[9px] font-semibold px-2 py-0.5 rounded-full transition-all duration-150" style={{ border: "1px solid rgba(34,211,138,0.3)", color: "#22d38a", background: "rgba(34,211,138,0.06)", letterSpacing: "0.3px" }}>Set Target</button>
                       </div>
                     </div>
@@ -664,15 +651,15 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                       <span className="text-[15px] font-medium" style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace", color: isUp ? "#22d38a" : "#ff4d6a" }}>{live ? `${isUp ? "+" : ""}${(live.LastRate - live.PClose).toFixed(2)} (${live.ChgPcnt.toFixed(2)}%)` : "—"}</span>
                     </div>
                     <div className="text-[12.5px] mx-auto w-[120px] font-medium" style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace" }}>
-                      <div className="flex justify-between pb-1 mb-1" style={{ borderBottom: "1px solid rgba(186,186,186,0.08)" }}><span style={{ color: "#5a5f78" }}>H</span><span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.High) : "—"}</span></div>
-                      <div className="flex justify-between"><span style={{ color: "#5a5f78" }}>L</span><span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.Low) : "—"}</span></div>
+                      <div className="flex justify-between pb-1 mb-1 border-b border-borderColor"><span className="text-textSubtle">H</span><span className="text-textPrimary">{live ? formatNumber(live.High) : "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-textSubtle">L</span><span className="text-textPrimary">{live ? formatNumber(live.Low) : "—"}</span></div>
                     </div>
                     <div className="text-[12.5px] mx-auto w-[120px] font-medium" style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace" }}>
-                      <div className="flex justify-between pb-1 mb-1" style={{ borderBottom: "1px solid rgba(186,186,186,0.08)" }}><span style={{ color: "#5a5f78" }}>O</span><span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.OpenRate) : "—"}</span></div>
-                      <div className="flex justify-between"><span style={{ color: "#5a5f78" }}>PC</span><span style={{ color: "#f0f2f8" }}>{live ? formatNumber(live.PClose) : "—"}</span></div>
+                      <div className="flex justify-between pb-1 mb-1 border-b border-borderColor"><span className="text-textSubtle">O</span><span className="text-textPrimary">{live ? formatNumber(live.OpenRate) : "—"}</span></div>
+                      <div className="flex justify-between"><span className="text-textSubtle">PC</span><span className="text-textPrimary">{live ? formatNumber(live.PClose) : "—"}</span></div>
                     </div>
                     <div className="text-[12.5px] mx-auto w-[130px] font-medium" style={{ fontFamily: "'JetBrains Mono', 'IBM Plex Mono', monospace" }}>
-                      <div className="flex justify-between pb-1 mb-1" style={{ borderBottom: "1px solid rgba(186,186,186,0.08)" }}><span style={{ color: "#5a5f78" }}>I</span><span style={{ color: "#f0f2f8" }}>{hasInitial ? `₹ ${formatNumber(initialPrice.toFixed(2))}` : "—"}</span></div>
+                      <div className="flex justify-between pb-1 mb-1 border-b border-borderColor"><span className="text-textSubtle">I</span><span className="text-textPrimary">{hasInitial ? `₹ ${formatNumber(initialPrice.toFixed(2))}` : "—"}</span></div>
                       <div className="flex justify-between"><span style={{ color: "#7c6fff" }}>T</span><span style={{ color: "#7c6fff" }}>{hasTarget ? `₹ ${formatNumber(targetPrice.toFixed(2))}` : "—"}</span></div>
                     </div>
                     <div className="flex justify-center items-center">
@@ -680,7 +667,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                         {targetProgressPct == null ? "—" : `${targetProgressPct.toFixed(2)}%`}
                       </span>
                     </div>
-                    <div style={{ background: "linear-gradient(to right, rgba(23,29,44,0) 0%, rgba(23,29,44,0.7) 50%, rgba(23,29,44,1) 100%)", height: "100%", paddingLeft: "10vh" }} className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
+                    <div style={{ height: "100%", paddingLeft: "10vh" }} className="row-actions-fade absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
                       <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(34,211,138,0.3)", background: "rgba(34,211,138,0.07)", color: "#22d38a" }}>Buy</button>
                       <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(255,77,106,0.3)", background: "rgba(255,77,106,0.07)", color: "#ff4d6a" }}>Sell</button>
                       <button onClick={(e) => { e.stopPropagation(); handleRemove(item); }} className="p-1.5 rounded-lg transition" style={{ background: "rgba(255,77,106,0.07)", border: "1px solid rgba(255,77,106,0.2)" }}><FiTrash2 size={13} style={{ color: "#ff4d6a" }} /></button>
@@ -689,7 +676,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                 );
               })}
 
-            {!staticTabs.includes(activeTab) && !loading && filteredData.length === 0 && (
+            {!loading && filteredData.length === 0 && (
               <div className="p-12 text-center text-[13px]" style={{ color: "#5a5f78" }}>
                 {searchQuery.trim() ? "No stocks match your search" : "No stocks in this watchlist"}
               </div>
@@ -697,31 +684,26 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
           </div>
 
           {/* Pagination footer */}
-          {!staticTabs.includes(activeTab) && !loading && filteredData.length > 0 && (
-            <div
-              className="flex items-center justify-between px-5 py-3 border-t border-borderColor"
-              className="bg-[var(--color-surface-subtle)]"
-            >
-              <span className="text-[11px]" style={{ color: "#5a5f78" }}>
+          {!loading && filteredData.length > 0 && (
+            <div className="flex items-center justify-between px-5 py-3 border-t border-borderColor bg-[var(--color-surface-subtle)]">
+              <span className="text-[11px] text-textSubtle">
                 Showing {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredData.length)} of {filteredData.length}
               </span>
               <div className="flex items-center gap-2">
                 <button
                   disabled={currentPage <= 1}
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  className="px-3 py-1 text-[11px] font-semibold rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:text-slate-300"
-                  style={{ borderColor: "rgba(255,255,255,0.08)", color: "#9ca3af" }}
+                  className="px-3 py-1 text-[11px] font-semibold rounded-md border border-borderColor text-textMuted transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:text-textPrimary hover:bg-[var(--color-row-hover)]"
                 >
                   Previous
                 </button>
-                <span className="text-[11px] font-medium min-w-[72px] text-center" style={{ color: "#5a5f78" }}>
+                <span className="text-[11px] font-medium min-w-[72px] text-center text-textSubtle">
                   Page {currentPage} of {totalPages}
                 </span>
                 <button
                   disabled={currentPage >= totalPages}
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  className="px-3 py-1 text-[11px] font-semibold rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:text-slate-300"
-                  style={{ borderColor: "rgba(255,255,255,0.08)", color: "#9ca3af" }}
+                  className="px-3 py-1 text-[11px] font-semibold rounded-md border border-borderColor text-textMuted transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:text-textPrimary hover:bg-[var(--color-row-hover)]"
                 >
                   Next
                 </button>
