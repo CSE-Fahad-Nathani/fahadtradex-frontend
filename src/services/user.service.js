@@ -1,9 +1,13 @@
 import { useUserStore } from "../store/userStore";
 
 export const fetchUserData = async () => {
+  const { setUser, setLoading } = useUserStore.getState();
+
   try {
     const token = localStorage.getItem("token");
     if (!token) return;
+
+    setLoading(true);
 
     const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/me`, {
       headers: {
@@ -14,12 +18,14 @@ export const fetchUserData = async () => {
     const result = await res.json();
 
     if (result.success) {
-      useUserStore.getState().setUser(result.data);
+      setUser(result.data);
     }
 
     return result.data;
   } catch (err) {
     console.error("fetchUserData error:", err);
+  } finally {
+    setLoading(false);
   }
 };
 

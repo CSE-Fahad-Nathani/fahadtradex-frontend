@@ -5,10 +5,12 @@ import { useToast } from "../../components/common/Toast/ToastContext";
 import { fetchUserData } from "../../services/user.service";
 import { formatNumber } from "../../utils/formatNumber";
 import { useUserStore } from "../../store/userStore";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, AlertTriangle, ArrowLeft, CheckCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import { X, Minus, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useThemeStore } from "../../store/themeStore";
+
+const mono = { fontFamily: "'IBM Plex Mono', monospace" };
 
 const TradeModal = ({
   isOpen,
@@ -19,7 +21,6 @@ const TradeModal = ({
   symbol,
   name,
   action,
-  holdingQty = 0,
   avgPrice = 0,
   lotSize = 1,
   multiplier = 1,
@@ -39,19 +40,42 @@ const TradeModal = ({
   const user = useUserStore((s) => s.user);
   const isLight = useThemeStore((s) => s.theme) === "light";
 
-  const profitColor = (positive) =>
-    isLight ? (positive ? "#15803d" : "#b91c1c") : positive ? "#22d38a" : "#ff4d6a";
-  const labelClass = isLight ? "text-slate-600" : "text-textSubtle";
-  const valueTextColor = isLight ? "#334155" : "#c8cad8";
-  const emphasisTextColor = isLight ? "#0f172a" : "#e0e2ea";
-  const mutedTextColor = isLight ? "#64748b" : "#6b7090";
-  const neutralSurface = isLight ? "var(--color-surface-subtle)" : "rgba(255,255,255,0.04)";
-  const neutralBorder = isLight ? "var(--color-border)" : "rgba(255,255,255,0.08)";
+  const profitClass = (positive) =>
+    isLight ? (positive ? "text-green-700" : "text-red-700") : positive ? "text-green-400" : "text-red-400";
 
   const isBuy = action === "BUY";
-  const accentColor = isBuy ? "#22d38a" : "#ff4d6a";
-  const accentBg = isBuy ? "rgba(34,211,138,0.08)" : "rgba(255,77,106,0.08)";
-  const accentBorder = isBuy ? "rgba(34,211,138,0.25)" : "rgba(255,77,106,0.25)";
+  const actionBadgeClass = isBuy
+    ? isLight
+      ? "bg-green-50 text-green-700 border-green-500/35"
+      : "bg-green-500/10 text-green-400 border-green-500/30"
+    : isLight
+      ? "bg-red-50 text-red-700 border-red-500/35"
+      : "bg-red-500/10 text-red-400 border-red-500/30";
+
+  const actionStripClass = isBuy
+    ? isLight ? "bg-green-600" : "bg-green-500"
+    : isLight ? "bg-red-600" : "bg-red-500";
+
+  const actionBtnClass = isBuy
+    ? isLight
+      ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+      : "bg-green-500 hover:bg-green-400 text-black border-green-500"
+    : isLight
+      ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
+      : "bg-red-500 hover:bg-red-400 text-white border-red-500";
+
+  const confirmPanelClass = isBuy
+    ? isLight ? "bg-green-50 border-green-500/30" : "bg-green-500/10 border-green-500/25"
+    : isLight ? "bg-red-50 border-red-500/30" : "bg-red-500/10 border-red-500/25";
+
+  const confirmTextClass = isBuy
+    ? isLight ? "text-green-700" : "text-green-400"
+    : isLight ? "text-red-700" : "text-red-400";
+
+  const panelClass =
+    "rounded-lg border border-borderColor bg-[var(--color-surface-elevated)]";
+  const ghostBtnClass =
+    "border border-borderColor bg-[var(--color-surface-subtle)] text-textSubtle hover:bg-[var(--color-row-hover)] hover:text-textPrimary transition-colors";
 
   const price = live?.LastRate || 0;
   const prevClose = live?.PClose || 0;
@@ -74,8 +98,9 @@ const TradeModal = ({
     total = Number((quantity * price).toFixed(2));
   }
 
-  // Only relevant when buying — on SELL the user is receiving money, not spending it
   const insufficientBalance = isBuy && (user?.balance ?? Infinity) < total;
+  const maxQty = isMCX ? lots : totalQty;
+  const canSubmit = price > 0 && quantity > 0 && !insufficientBalance;
 
   useEffect(() => {
     if (action === "SELL") {
@@ -84,13 +109,39 @@ const TradeModal = ({
       setQuantity(1);
     }
     setStep("FORM");
-  }, [action, lots, totalQty, isOpen]);
+  }, [action, lots, totalQty, isOpen, isMCX]);
+
+  const handleClose = () => {
+    onClose();
+    setStep("FORM");
+  };
+
+  const adjustQty = (delta) => {
+    const next = quantity + delta;
+    if (next < 1) return;
+    if (action === "SELL" && maxQty !== undefined && next > maxQty) {
+      showToast("error", "Cannot sell more than available quantity");
+      return;
+    }
+    setQuantity(next);
+  };
+
+  const handleQtyChange = (val) => {
+    if (action === "SELL" && maxQty !== undefined && val > maxQty) {
+      showToast("error", "Cannot sell more than available quantity");
+      return;
+    }
+    setQuantity(val);
+  };
 
   const handleConfirm = async () => {
     try {
       setLoading(true);
       const jwt = localStorage.getItem("token");
-      if (!jwt) { showToast("error", "Session expired. Please login again"); return; }
+      if (!jwt) {
+        showToast("error", "Session expired. Please login again");
+        return;
+      }
 
       const url = isBuy
         ? `${import.meta.env.VITE_API_BASE_URL}/api/stocks/buy`
@@ -117,7 +168,10 @@ const TradeModal = ({
         if (isPositionPage && typeof setTriggerPositionUpdate === "function") {
           setTriggerPositionUpdate((x) => x + 1);
         }
-        setTimeout(() => { onClose(); setStep("FORM"); navigate("/orders"); }, 100);
+        setTimeout(() => {
+          handleClose();
+          navigate("/orders");
+        }, 100);
       } else {
         showToast("error", res.data?.message || "Order failed");
       }
@@ -136,386 +190,229 @@ const TradeModal = ({
   if (!isOpen) return null;
 
   const exchangeLabel = exchange === "M" ? "MCX" : exchange === "N" ? "NSE" : "BSE";
+  const totalLabel = isMCX ? (isBuy ? "Margin" : "Receive") : isBuy ? "Total" : "Receive";
+  const qtyLabel = isMCX ? "Lots" : "Qty";
+
+  const totalValueClass = insufficientBalance
+    ? profitClass(false)
+    : isBuy
+      ? confirmTextClass
+      : profitClass(true);
+
+  const SummaryRow = ({ label, value, valueClassName = "text-textPrimary", bold }) => (
+    <div className="flex items-center justify-between gap-3 py-1">
+      <span className="text-xs text-textSubtle">{label}</span>
+      <span className={`text-xs ${bold ? "font-bold" : "font-medium"} ${valueClassName}`} style={mono}>
+        {value}
+      </span>
+    </div>
+  );
 
   return (
-    <AnimatePresence>
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4"
-        style={{ background: "var(--color-modal-overlay)", backdropFilter: "blur(8px)" }}
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
+      style={{ background: "var(--color-modal-overlay)", backdropFilter: "blur(6px)" }}
+      onClick={handleClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 24 }}
+        transition={{ duration: 0.18 }}
+        className={`w-full sm:max-w-[380px] rounded-t-xl sm:rounded-xl border border-borderColor overflow-hidden ${
+          isLight ? "shadow-xl shadow-slate-900/10" : "shadow-2xl shadow-black/40"
+        }`}
+        style={{ background: "var(--color-modal-bg)" }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97, y: 12 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.97, y: 12 }}
-          transition={{ duration: 0.2 }}
-          className="w-full max-w-full sm:max-w-[540px] relative overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-2xl border border-borderColor bg-cardBg mx-3.5 sm:mx-0"
-          style={{
-            borderTop: `2px solid ${accentColor}`,
-            boxShadow: "0 24px 64px -16px rgba(0,0,0,0.55)",
-          }}
-        >
-          <div className="relative p-3 sm:p-7">
+        <div className={`h-1 w-full ${actionStripClass}`} />
+        <div className="flex justify-center pt-2 pb-0 sm:hidden">
+          <div className="w-8 h-1 rounded-full bg-borderColor" />
+        </div>
 
-            {/* ── HEADER ── */}
-            <div className="flex items-start justify-between mb-3 sm:mb-6 pb-3 sm:pb-4 border-b border-borderColor">
-              <div className="flex-1 min-w-0 pr-3">
-                <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2 flex-wrap">
-                  <span
-                    className="text-[8px] sm:text-xs font-bold uppercase tracking-wide px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md"
-                    style={{ color: accentColor, background: accentBg, border: `1px solid ${accentBorder}` }}
-                  >
-                    {isBuy ? "Buy" : "Sell"}
-                  </span>
-                  <span className={`text-[8px] sm:text-xs font-medium px-2 py-0.5 sm:py-1 rounded-md border border-borderColor ${labelClass}`}>
-                    {exchangeLabel}
-                  </span>
-                  <span
-                    className="text-[8px] sm:text-xs font-semibold px-2 py-0.5 sm:py-1 rounded-md"
-                    style={{ color: "#7c6fff", background: "rgba(124,111,255,0.08)", border: "1px solid rgba(124,111,255,0.15)" }}
-                  >
-                    {symbol}
-                  </span>
-                </div>
-                <p className={`text-[11px] sm:text-sm font-medium truncate ${labelClass}`}>{name}</p>
+        <div className="px-4 pt-3 pb-4 sm:pt-4 sm:pb-4">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded border ${actionBadgeClass}`}>
+              {isBuy ? "Buy" : "Sell"}
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-sm font-semibold text-textPrimary truncate">{symbol}</span>
+                <span className="text-[10px] text-textSubtle">{exchangeLabel}</span>
               </div>
-
-              <button
-                onClick={() => { onClose(); setStep("FORM"); }}
-                className={`flex-shrink-0 p-1.5 sm:p-2 rounded-lg border border-borderColor ${labelClass} hover:text-textPrimary hover:bg-[var(--color-row-hover)] transition-colors`}
-              >
-                <X size={14} className="sm:hidden" />
-                <X size={16} className="hidden sm:block" />
-              </button>
+              <p className="text-[11px] truncate text-textMuted">{name}</p>
             </div>
+            <button
+              onClick={handleClose}
+              className="p-1.5 rounded-md text-textSubtle hover:bg-[var(--color-row-hover)] hover:text-textPrimary transition-colors"
+              aria-label="Close"
+            >
+              <X size={16} />
+            </button>
+          </div>
 
-            {/* ── PRICE SECTION ── */}
-            <div className="rounded-xl border border-borderColor bg-[var(--color-surface-elevated)] p-3 sm:p-5 mb-3 sm:mb-6">
-              <div className="flex items-end justify-between mb-3 sm:mb-4">
-                <div>
-                  <p className={`text-[8px] sm:text-[10px] font-medium uppercase tracking-[0.12em] mb-1 ${labelClass}`}>
-                    Live Price
-                  </p>
-                  <p
-                    className="text-xl sm:text-3xl font-semibold tracking-tight"
-                    style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(isUp) }}
-                  >
-                    ₹{formatNumber(price) || "—"}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p
-                    className="text-[10px] sm:text-sm font-semibold"
-                    style={{ fontFamily: "'IBM Plex Mono', monospace", color: profitColor(isUp) }}
-                  >
-                    {price ? `${isUp ? "+" : ""}${change.toFixed(2)} (${changePercent.toFixed(2)}%)` : "—"}
-                  </p>
-                  <p className={`text-[8px] sm:text-[10px] mt-1 ${labelClass}`}>vs prev. close</p>
-                </div>
-              </div>
-
-              {live && (
-                <div className="grid grid-cols-4 gap-px rounded-lg overflow-hidden border border-borderColor">
-                  {[
-                    { label: "Open", value: formatNumber(live.OpenRate) },
-                    { label: "High", value: formatNumber(live.High) },
-                    { label: "Low", value: formatNumber(live.Low) },
-                    { label: "Prev", value: formatNumber(live.PClose) },
-                  ].map((stat) => (
-                    <div key={stat.label} className="text-center py-2 sm:py-2.5 px-1 bg-cardBg">
-                      <p className={`text-[7px] sm:text-[9px] font-medium uppercase tracking-wide mb-1 ${labelClass}`}>
-                        {stat.label}
-                      </p>
-                      <p className="text-[9px] sm:text-sm font-medium text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
-                        {stat.value}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+          {/* Live price */}
+          <div className={`${panelClass} flex items-center justify-between px-3 py-2 mb-3`}>
+            <div>
+              <p className="text-[10px] uppercase tracking-wide text-textSubtle">LTP</p>
+              <p className={`text-lg font-bold leading-tight ${profitClass(isUp)}`} style={mono}>
+                ₹{formatNumber(price) || "—"}
+              </p>
             </div>
+            <p className={`text-xs font-semibold text-right ${profitClass(isUp)}`} style={mono}>
+              {price ? `${isUp ? "+" : ""}${change.toFixed(2)} (${changePercent.toFixed(2)}%)` : "—"}
+            </p>
+          </div>
 
-            {/* ── FORM STEP ── */}
-            {step === "FORM" && (
-              <>
-                <div className="mb-2 sm:mb-4">
-                  <div className="flex items-center justify-between mb-1 sm:mb-2">
-                    <label className={`text-[9px] sm:text-sm font-semibold ${isLight ? "text-slate-700" : "text-textPrimary"}`}>
-                      {isMCX ? "Number of Lots" : "Quantity"}
-                    </label>
-                    {action === "SELL" && (
-                      <span className={`text-[8px] sm:text-xs px-1.5 sm:px-2.5 py-px sm:py-1 rounded sm:rounded-lg font-medium border border-borderColor ${labelClass}`}
-                        style={{ background: neutralSurface }}>
-                        Max: <span className="text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
-                          {isMCX ? lots : totalQty}
-                        </span>
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <button
-                      onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                      className={`w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-md sm:rounded-xl text-base sm:text-xl font-bold transition-all border border-borderColor ${labelClass}`}
-                      style={{ background: neutralSurface }}
-                    >
-                      −
-                    </button>
-
-                    <input
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        const maxQty = isMCX ? lots : totalQty;
-                        if (action === "SELL" && maxQty !== undefined && val > maxQty) {
-                          showToast("error", "Cannot sell more than available quantity");
-                          return;
-                        }
-                        setQuantity(val);
-                      }}
-                      className="flex-1 text-center outline-none transition-all duration-200 text-sm sm:text-xl font-bold bg-inputBg border border-borderColor text-textPrimary rounded-lg py-1.5 px-2"
-                      style={{ fontFamily: "'IBM Plex Mono', monospace" }}
-                      onFocus={(e) => {
-                        e.target.style.border = `1px solid ${accentColor}60`;
-                        e.target.style.background = `${accentColor}08`;
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.border = neutralBorder;
-                        e.target.style.background = isLight ? "var(--color-input-bg)" : neutralSurface;
-                      }}
-                    />
-
-                    <button
-                      onClick={() => {
-                        const maxQty = isMCX ? lots : totalQty;
-                        if (action === "SELL" && maxQty !== undefined && quantity >= maxQty) {
-                          showToast("error", "Cannot sell more than available quantity");
-                          return;
-                        }
-                        setQuantity(q => q + 1);
-                      }}
-                      className={`w-8 h-8 sm:w-12 sm:h-12 flex-shrink-0 flex items-center justify-center rounded-md sm:rounded-xl text-base sm:text-xl font-bold transition-all border border-borderColor ${labelClass}`}
-                      style={{ background: neutralSurface }}
-                    >
-                      +
-                    </button>
-                  </div>
-
-                  {isMCX && (
-                    <p className={`text-[8px] sm:text-xs mt-1 sm:mt-2 ${labelClass}`}>
-                      1 lot = <span className="text-textPrimary" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>{lotSize} units</span>
-                    </p>
+          {step === "FORM" && (
+            <>
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-textPrimary">{qtyLabel}</span>
+                  {action === "SELL" && maxQty != null && (
+                    <span className="text-[10px] text-textSubtle">
+                      Max <span className="text-textPrimary font-medium" style={mono}>{maxQty}</span>
+                    </span>
                   )}
                 </div>
-
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => adjustQty(-1)}
+                    className={`w-9 h-9 flex items-center justify-center rounded-lg ${ghostBtnClass}`}
+                  >
+                    <Minus size={14} />
+                  </button>
+                  <input
+                    type="number"
+                    value={quantity}
+                    min={1}
+                    onChange={(e) => handleQtyChange(Number(e.target.value))}
+                    className="flex-1 h-9 text-center text-sm font-bold rounded-lg outline-none bg-inputBg border border-borderColor text-textPrimary focus:border-accent/40 focus:ring-1 focus:ring-accent/20"
+                    style={mono}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => adjustQty(1)}
+                    className={`w-9 h-9 flex items-center justify-center rounded-lg ${ghostBtnClass}`}
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
                 {isMCX && (
-                  <div className="flex items-start gap-1.5 sm:gap-3 p-2 sm:p-3.5 rounded-md sm:rounded-xl mb-2 sm:mb-4"
-                    style={{ background: "rgba(251,191,36,0.07)", border: "1px solid rgba(251,191,36,0.2)" }}>
-                    <AlertTriangle size={11} className="sm:hidden flex-shrink-0 mt-0.5" style={{ color: "#fbbf24" }} />
-                    <AlertTriangle size={15} className="hidden sm:block flex-shrink-0 mt-0.5" style={{ color: "#fbbf24" }} />
-                    <p className="text-[8px] sm:text-xs leading-relaxed" style={{ color: "#fbbf24" }}>
-                      Margin (~15%) blocked, not full contract value.
-                    </p>
-                  </div>
+                  <p className="text-[10px] mt-1 text-textSubtle">
+                    1 lot = {lotSize} units · ~15% margin
+                  </p>
                 )}
+              </div>
 
-                <div className="rounded-xl mb-3 sm:mb-6 overflow-hidden border border-borderColor">
-                  <div className="px-3 sm:px-4 py-2 sm:py-2.5 border-b border-borderColor bg-[var(--color-surface-elevated)]">
-                    <p className={`text-[8px] sm:text-[10px] font-semibold uppercase tracking-[0.12em] ${labelClass}`}>Order Summary</p>
-                  </div>
-                  <div className="px-3 sm:px-5 py-3 sm:py-4 space-y-2 sm:space-y-3.5 bg-cardBg">
-                    {[
-                      { label: "Price per unit", value: `₹ ${formatNumber(price)}` },
-                      { label: isMCX ? "Lots" : "Quantity", value: formatNumber(quantity) },
-                      ...(isMCX ? [{ label: "Contract Value", value: `₹ ${formatNumber(contractValue.toFixed(2))}` }] : []),
-                    ].map((row) => (
-                      <div key={row.label} className="flex justify-between items-center">
-                        <span className="text-[9px] sm:text-sm" style={{ color: mutedTextColor }}>{row.label}</span>
-                        <span className="text-[9px] sm:text-sm font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: valueTextColor }}>
-                          {row.value}
-                        </span>
-                      </div>
-                    ))}
-
-                    <div className="pt-1.5 mt-0.5 border-t border-borderColor">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] sm:text-base font-bold" style={{ color: emphasisTextColor }}>
-                          {isMCX ? (isBuy ? "Margin Required" : "You Receive") : (isBuy ? "Total" : "You Receive")}
-                        </span>
-                        <span className="text-sm sm:text-xl font-bold" style={{
-                          fontFamily: "'IBM Plex Mono', monospace",
-                          color: insufficientBalance ? profitColor(false) : (isBuy ? accentColor : profitColor(true))
-                        }}>
-                          ₹ {formatNumber(total)}
-                        </span>
-                      </div>
-                      {insufficientBalance && (
-                        <p className="text-[8px] sm:text-xs mt-0.5 sm:mt-1.5 text-right" style={{ color: profitColor(false) }}>
-                          ⚠ Insufficient (₹{formatNumber(user?.balance?.toFixed(2))})
-                        </p>
-                      )}
-                    </div>
-
-                    {isMCX && action === "SELL" && (
-                      <div className="flex justify-between items-center pt-1.5 border-t border-borderColor">
-                        <span className="text-[9px] sm:text-sm" style={{ color: mutedTextColor }}>Est. P&L</span>
-                        <span className="text-[10px] sm:text-base font-bold" style={{
-                          fontFamily: "'IBM Plex Mono', monospace",
-                          color: profitColor(pnl >= 0)
-                        }}>
-                          {pnl >= 0 ? "+" : ""}₹ {formatNumber(pnl.toFixed(2))}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mb-2 sm:mb-5 px-0.5">
-                  <span className={`text-[9px] sm:text-sm ${labelClass}`}>Balance</span>
-                  <span className="text-[9px] sm:text-sm font-semibold" style={{
-                    fontFamily: "'IBM Plex Mono', monospace",
-                    color: insufficientBalance ? profitColor(false) : profitColor(true)
-                  }}>
-                    ₹ {formatNumber(user?.balance?.toFixed(2))}
+              <div className={`${panelClass} px-3 py-2 mb-3 space-y-0.5`}>
+                <SummaryRow label="Price" value={`₹ ${formatNumber(price)}`} />
+                <SummaryRow label={qtyLabel} value={formatNumber(quantity)} />
+                {isMCX && (
+                  <SummaryRow label="Contract" value={`₹ ${formatNumber(contractValue.toFixed(2))}`} />
+                )}
+                <div className="border-t border-borderColor my-1" />
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-xs font-semibold text-textPrimary">{totalLabel}</span>
+                  <span className={`text-sm font-bold ${totalValueClass}`} style={mono}>
+                    ₹ {formatNumber(total)}
                   </span>
                 </div>
+                {isMCX && action === "SELL" && (
+                  <SummaryRow
+                    label="Est. P&L"
+                    value={`${pnl >= 0 ? "+" : ""}₹ ${formatNumber(pnl.toFixed(2))}`}
+                    valueClassName={profitClass(pnl >= 0)}
+                    bold
+                  />
+                )}
+                <SummaryRow
+                  label="Balance"
+                  value={`₹ ${formatNumber(user?.balance?.toFixed(2))}`}
+                  valueClassName={insufficientBalance ? profitClass(false) : profitClass(true)}
+                />
+                {insufficientBalance && (
+                  <p className={`text-[10px] text-right pt-0.5 ${profitClass(false)}`}>
+                    Insufficient balance
+                  </p>
+                )}
+              </div>
 
-                <div className="flex gap-1.5 sm:gap-3">
-                  <button
-                    onClick={onClose}
-                    className={`flex-1 py-2 sm:py-3.5 text-[9px] sm:text-sm font-semibold rounded-md sm:rounded-xl transition-all duration-150 border border-borderColor hover:bg-[var(--color-row-hover)] ${labelClass}`}
-                    style={{ background: neutralSurface }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    disabled={!price || quantity <= 0 || insufficientBalance}
-                    onClick={() => setStep("PREVIEW")}
-                    className="flex-1 py-2 sm:py-3.5 text-[9px] sm:text-sm font-bold rounded-md sm:rounded-xl transition-all duration-200"
-                    style={{
-                      background: (!price || quantity <= 0 || insufficientBalance) ? neutralSurface : accentColor,
-                      border: `1px solid ${(!price || quantity <= 0 || insufficientBalance) ? neutralBorder : accentColor}`,
-                      color: (!price || quantity <= 0 || insufficientBalance) ? (isLight ? "#94a3b8" : "#444") : (isBuy ? "#000" : "#fff"),
-                      cursor: (!price || quantity <= 0 || insufficientBalance) ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    Review →
-                  </button>
-                </div>
-              </>
-            )}
-
-            {/* ── PREVIEW STEP ── */}
-            {step === "PREVIEW" && (
-              <>
-                <div
-                  className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl mb-3 sm:mb-4 border"
-                  style={{ background: accentBg, borderColor: accentBorder }}
+              <div className="flex gap-2">
+                <button type="button" onClick={handleClose} className={`flex-1 h-10 text-xs font-semibold rounded-lg ${ghostBtnClass}`}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={!canSubmit}
+                  onClick={() => setStep("PREVIEW")}
+                  className={`flex-1 h-10 text-xs font-bold rounded-lg border transition-colors ${
+                    canSubmit ? actionBtnClass : `${ghostBtnClass} opacity-60 cursor-not-allowed`
+                  }`}
                 >
-                  <CheckCircle size={16} className="sm:hidden shrink-0" style={{ color: accentColor }} />
-                  <CheckCircle size={18} className="hidden sm:block shrink-0" style={{ color: accentColor }} />
-                  <div>
-                    <p className="text-[10px] sm:text-sm font-semibold" style={{ color: accentColor }}>
-                      Confirm {isBuy ? "purchase" : "sale"}
-                    </p>
-                    <p className={`text-[8px] sm:text-xs mt-0.5 ${labelClass}`}>
-                      Review before placing.
-                    </p>
-                  </div>
-                </div>
+                  Review
+                </button>
+              </div>
+            </>
+          )}
 
-                <div className="rounded-xl mb-3 sm:mb-6 overflow-hidden border border-borderColor">
-                  <div className="px-3 sm:px-4 py-2 sm:py-2.5 border-b border-borderColor bg-[var(--color-surface-elevated)]">
-                    <p className={`text-[8px] sm:text-[10px] font-semibold uppercase tracking-[0.12em] ${labelClass}`}>Order Details</p>
-                  </div>
-                  <div className="px-3 sm:px-5 py-3 sm:py-4 space-y-2 sm:space-y-3.5 bg-cardBg">
-                    {[
-                      { label: "Type", value: isBuy ? "BUY" : "SELL", valueColor: accentColor, bold: true },
-                      { label: "Symbol", value: symbol },
-                      { label: "Exchange", value: exchangeLabel },
-                      { label: isMCX ? "Lots" : "Qty", value: formatNumber(quantity) },
-                      { label: "Price", value: `₹ ${formatNumber(price)}` },
-                      ...(isMCX ? [{ label: "Contract", value: `₹ ${formatNumber(contractValue.toFixed(2))}` }] : []),
-                    ].map((row) => (
-                      <div key={row.label} className="flex justify-between items-center">
-                        <span className="text-[9px] sm:text-sm" style={{ color: mutedTextColor }}>{row.label}</span>
-                        <span className="text-[9px] sm:text-sm" style={{ fontFamily: "'IBM Plex Mono', monospace", color: row.valueColor || valueTextColor, fontWeight: row.bold ? 700 : 500 }}>
-                          {row.value}
-                        </span>
-                      </div>
-                    ))}
+          {step === "PREVIEW" && (
+            <>
+              <div className={`rounded-lg border px-3 py-2.5 mb-3 text-center ${confirmPanelClass}`}>
+                <p className={`text-xs font-semibold ${confirmTextClass}`}>
+                  Confirm {isBuy ? "Buy" : "Sell"} · {formatNumber(quantity)} {isMCX ? "lots" : "qty"} @ ₹{formatNumber(price)}
+                </p>
+                <p className={`text-lg font-bold mt-1 ${confirmTextClass}`} style={mono}>
+                  ₹ {formatNumber(total)}
+                </p>
+                <p className="text-[10px] mt-1 text-textSubtle">
+                  Balance after: ₹{" "}
+                  {formatNumber(
+                    (isBuy ? (user?.balance || 0) - total : (user?.balance || 0) + total).toFixed(2)
+                  )}
+                </p>
+              </div>
 
-                    <div className="pt-1.5 sm:pt-3 mt-0.5 border-t border-borderColor">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] sm:text-base font-bold" style={{ color: emphasisTextColor }}>
-                          {isMCX ? (isBuy ? "Margin" : "Receive") : (isBuy ? "Total" : "Receive")}
-                        </span>
-                        <span className="text-sm sm:text-2xl font-bold" style={{
-                          fontFamily: "'IBM Plex Mono', monospace",
-                          color: insufficientBalance ? profitColor(false) : (isBuy ? accentColor : profitColor(true))
-                        }}>
-                          ₹ {formatNumber(total)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              <div className={`${panelClass} px-3 py-2 mb-3`}>
+                <SummaryRow label="Symbol" value={symbol} />
+                <SummaryRow label="Exchange" value={exchangeLabel} />
+                {isMCX && (
+                  <SummaryRow label="Contract" value={`₹ ${formatNumber(contractValue.toFixed(2))}`} />
+                )}
+              </div>
 
-                <div className="flex items-center justify-between mb-2 sm:mb-5 px-0.5">
-                  <span className={`text-[9px] sm:text-sm ${labelClass}`}>
-                    {isBuy ? "After Order" : "After Sale"}
-                  </span>
-                  <span className="text-[9px] sm:text-sm font-semibold text-textPrimary" style={{
-                    fontFamily: "'IBM Plex Mono', monospace",
-                  }}>
-                    ₹ {formatNumber((isBuy
-                      ? (user?.balance || 0) - total
-                      : (user?.balance || 0) + total
-                    ).toFixed(2))}
-                  </span>
-                </div>
-
-                <div className="flex gap-1.5 sm:gap-3">
-                  <button
-                    onClick={() => setStep("FORM")}
-                    className={`flex-1 py-2 sm:py-3.5 text-[9px] sm:text-sm font-semibold rounded-md sm:rounded-xl transition-all duration-150 flex items-center justify-center gap-1 sm:gap-2 border border-borderColor hover:bg-[var(--color-row-hover)] ${labelClass}`}
-                    style={{ background: neutralSurface }}
-                  >
-                    <ArrowLeft size={10} className="sm:hidden" />
-                    <ArrowLeft size={14} className="hidden sm:block" />
-                    Back
-                  </button>
-                  <button
-                    onClick={handleConfirm}
-                    disabled={loading}
-                    className="flex-1 py-2 sm:py-3.5 text-[9px] sm:text-sm font-bold rounded-md sm:rounded-xl transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2"
-                    style={{
-                      background: loading ? neutralSurface : accentColor,
-                      border: `1px solid ${loading ? neutralBorder : accentColor}`,
-                      color: loading ? (isLight ? "#94a3b8" : "#444") : "#000",
-                      cursor: loading ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    {loading ? (
-                      <>
-                        <svg className="animate-spin h-3 w-3 sm:h-4 sm:w-4" viewBox="0 0 24 24" fill="none">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                        </svg>
-                        Placing...
-                      </>
-                    ) : (
-                      `Confirm ${isBuy ? "Buy" : "Sell"}`
-                    )}
-                  </button>
-                </div>
-              </>
-            )}
-
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setStep("FORM")} className={`flex-1 h-10 text-xs font-semibold rounded-lg ${ghostBtnClass}`}>
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={loading}
+                  className={`flex-1 h-10 text-xs font-bold rounded-lg border flex items-center justify-center gap-1.5 transition-colors ${
+                    loading ? `${ghostBtnClass} cursor-not-allowed opacity-60` : actionBtnClass
+                  }`}
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      Placing…
+                    </>
+                  ) : (
+                    `Confirm ${isBuy ? "Buy" : "Sell"}`
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </motion.div>
+    </div>
   );
 };
 

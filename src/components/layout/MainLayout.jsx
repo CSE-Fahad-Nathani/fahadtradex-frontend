@@ -14,30 +14,30 @@ function MainLayout( {triggerWatchlistUpdate, setTriggerWatchlistUpdate, trigger
       <div className="flex-1 flex flex-col">
         <Header  triggerWatchlistUpdate={triggerWatchlistUpdate} setTriggerWatchlistUpdate={setTriggerWatchlistUpdate} triggerPositionUpdate={triggerPositionUpdate} setTriggerPositionUpdate={setTriggerPositionUpdate} />
 
-        <main className="relative flex-1 overflow-y-auto">
+        <main className="relative flex-1 min-h-0 overflow-hidden bg-primaryBg">
 
-{/* 🔥 Background Image */}
-<div
-  className="absolute inset-0 main-bg-image transition-opacity duration-300"
-  style={{
-    backgroundImage: `url(${bg})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-  }}
-/>
+          {/* Fixed background layers */}
+          <div
+            className="pointer-events-none absolute inset-0 main-bg-image transition-opacity duration-300"
+            style={{
+              backgroundImage: `url(${bg})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
+          />
 
-<div
-  className="absolute inset-0 backdrop-blur-sm transition-colors duration-300"
-  style={{ background: "var(--color-overlay)" }}
-/>
+          <div
+            className="pointer-events-none absolute inset-0 backdrop-blur-sm transition-colors duration-300"
+            style={{ background: "var(--color-overlay)" }}
+          />
 
-{/* 🔥 Content */}
-<div className="relative p-2 sm:p-6 pb-16 md:pb-6">
-  <Outlet />
-</div>
+          {/* Scrollable page content */}
+          <div className="relative h-full overflow-y-auto p-2 sm:p-6 pb-16 md:pb-6">
+            <Outlet />
+          </div>
 
-</main>
+        </main>
       </div>
 
     </div>
@@ -45,14 +45,3 @@ function MainLayout( {triggerWatchlistUpdate, setTriggerWatchlistUpdate, trigger
 }
 
 export default MainLayout;
-
-
-{/* <div
-  className="p-4 md:p-6 space-y-6 text-textPrimary min-h-screen"
-  style={{
-    backgroundImage: `url(${bg})`,
-    backgroundSize: "cover",
-    backgroundPosition: "center",
-    backgroundRepeat: "no-repeat",
-  }}
-></div> */}

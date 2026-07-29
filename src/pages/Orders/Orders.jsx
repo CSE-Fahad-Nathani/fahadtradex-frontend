@@ -118,8 +118,8 @@ function Orders() {
           return (
             <div
               key={i}
-              className="rounded-xl border border-borderColor overflow-hidden bg-cardBg"
-              style={{ background: mobileCardBg, borderColor: mobileBorderSubtle }}
+              className="rounded-xl border border-borderColor overflow-hidden bg-black"
+              style={{ background: "#000000", borderColor: mobileBorderSubtle }}
             >
               <div className="h-[1px]" style={{ background: `linear-gradient(90deg, transparent, ${profitColor(isBuy)}40, transparent)` }} />
 
@@ -186,7 +186,7 @@ function Orders() {
       </div>
 
       {/* ── Desktop Table ── */}
-      <div className="hidden sm:block bg-cardBg border border-borderColor rounded-xl overflow-x-auto">
+      <div className="hidden sm:block bg-black border border-borderColor rounded-xl overflow-x-auto">
         <div className="min-w-[900px]">
 
           <div className={`grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] px-4 py-3 text-xs border-b border-borderColor text-center bg-[var(--color-surface-subtle)] ${labelClass}`}>
@@ -198,11 +198,11 @@ function Orders() {
             <span><div>Reason</div><div className={`text-[10px] ${labelClass}`}>Message</div></span>
           </div>
 
-          <div>
+          <div className="bg-black">
             {loading && (
               <div className="animate-pulse">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] px-4 py-3 border-b border-borderColor">
+                  <div key={i} className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] px-4 py-3 border-b border-borderColor bg-black">
                     <div className="space-y-2"><div className="h-3 w-32 bg-borderColor rounded" /><div className="h-2 w-20 bg-borderColor rounded" /></div>
                     <div className="flex flex-col items-center gap-2"><div className="h-3 w-12 bg-borderColor rounded" /><div className="h-2 w-10 bg-borderColor rounded" /></div>
                     <div className="flex flex-col items-center gap-2"><div className="h-3 w-16 bg-borderColor rounded" /><div className="h-2 w-12 bg-borderColor rounded" /></div>
@@ -219,7 +219,7 @@ function Orders() {
               const isSuccess = item.status === "SUCCESS";
 
               return (
-                <div key={i} className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] px-4 py-3 border-b border-borderColor items-center text-center hover:bg-[var(--color-row-hover)] transition-colors">
+                <div key={i} className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] px-4 py-3 border-b border-borderColor items-center text-center bg-black hover:bg-[#0a0a0a] transition-colors">
                   <div className="text-left">
                     <p className="text-sm font-medium text-textPrimary">{item.name}</p>
                     <p className={`text-xs ${labelClass}`}>{item.symbol} • {item.Exch === "B" ? "BSE" : item.Exch === "N" ? "NSE" : "MCX"}</p>

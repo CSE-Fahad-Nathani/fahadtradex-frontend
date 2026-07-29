@@ -13,40 +13,46 @@ function GlobalPnlTracker() {
 
   const portfolio = useHoldingsStore((s) => s.portfolio);
   const positions = useHoldingsStore((s) => s.positions);
-  const isLoaded = useHoldingsStore((s) => s.isLoaded);
-  const setHoldings = useHoldingsStore((s) => s.setHoldings);
+  const setPortfolio = useHoldingsStore((s) => s.setPortfolio);
+  const setPositions = useHoldingsStore((s) => s.setPositions);
+  const setPortfolioLoading = useHoldingsStore((s) => s.setPortfolioLoading);
+  const setPositionsLoading = useHoldingsStore((s) => s.setPositionsLoading);
   const clearHoldings = useHoldingsStore((s) => s.clearHoldings);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-  
+
     if (!user || !token) return;
 
-    const fetchHoldings = async () => {
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const fetchPortfolio = async () => {
+      setPortfolioLoading(true);
       try {
-        const [portfolioRes, positionsRes] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/api/portfolio`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/api/positions`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
-
-        const portfolioJson = await portfolioRes.json();
-        const positionsJson = await positionsRes.json();
-
-        setHoldings({
-          portfolio: portfolioJson.success ? portfolioJson.data : [],
-          positions: positionsJson.success ? positionsJson.data : [],
-        });
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/portfolio`, { headers });
+        const json = await res.json();
+        setPortfolio(json.success ? json.data : []);
       } catch (error) {
-        console.error("Global holdings fetch failed:", error);
+        console.error("Global portfolio fetch failed:", error);
+        setPortfolio([]);
       }
     };
 
-    fetchHoldings();
-  }, [user,  setHoldings]);
+    const fetchPositions = async () => {
+      setPositionsLoading(true);
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/positions`, { headers });
+        const json = await res.json();
+        setPositions(json.success ? json.data : []);
+      } catch (error) {
+        console.error("Global positions fetch failed:", error);
+        setPositions([]);
+      }
+    };
+
+    fetchPortfolio();
+    fetchPositions();
+  }, [user, setPortfolio, setPositions, setPortfolioLoading, setPositionsLoading]);
 
   useEffect(() => {
     const all = [...portfolio, ...positions];

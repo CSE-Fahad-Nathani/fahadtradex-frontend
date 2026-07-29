@@ -32,11 +32,25 @@ const ALLOCATION_COLORS = {
 function Dashboard() {
   const portfolio = useHoldingsStore((s) => s.portfolio);
   const positions = useHoldingsStore((s) => s.positions);
+  const portfolioLoaded = useHoldingsStore((s) => s.portfolioLoaded);
+  const positionsLoaded = useHoldingsStore((s) => s.positionsLoaded);
   const liveData = useMarketStore((s) => s.data);
   const user = useUserStore((s) => s.user);
+  const userLoading = useUserStore((s) => s.loading);
   const rawHistory = usePnlHistoryStore((s) => s.rawHistory);
   const selectedWindowMinutes = usePnlHistoryStore((s) => s.selectedWindowMinutes);
   const setSelectedWindowMinutes = usePnlHistoryStore((s) => s.setSelectedWindowMinutes);
+  const [userFetched, setUserFetched] = useState(() => Boolean(useUserStore.getState().user));
+
+  const holdingsReady = portfolioLoaded && positionsLoaded;
+  // User name / margin-dependent cards
+  const userSectionLoading = !userFetched || userLoading;
+  // KPI + allocation need both holdings APIs and user balance
+  const statsLoading = !holdingsReady || userSectionLoading;
+  // Chart waits only for holdings (synthetic curve fills until live ticks arrive)
+  const chartLoading = !holdingsReady;
+  // Top holdings only needs portfolio + positions
+  const topHoldingsLoading = !holdingsReady;
 
   const normalizedRows = useMemo(() => {
     return [...portfolio, ...positions].map((item) => {
@@ -298,7 +312,14 @@ function Dashboard() {
 
 
   useEffect(() => {
-    fetchUserData();
+    let cancelled = false;
+    (async () => {
+      await fetchUserData();
+      if (!cancelled) setUserFetched(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -309,44 +330,65 @@ function Dashboard() {
         <div className="absolute -bottom-24 -left-20 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
 
         <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-3 sm:gap-6">
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="text-[9px] sm:text-xs uppercase tracking-[0.25em] text-gray-400">Welcome Back</p>
-            <h1 className="mt-1 sm:mt-2 text-base sm:text-2xl md:text-3xl font-bold text-white">
-              {user?.name ? `${user.name}'s Trading Desk` : "Your Trading Command Center"}
-            </h1>
-            <p className="mt-1 sm:mt-2 text-[10px] sm:text-sm text-gray-400 max-w-xl leading-relaxed">
-              Real-time portfolio intelligence with instant P&L movement, live allocation mix, and top
-              holdings performance.
-            </p>
+            {userSectionLoading ? (
+              <div className="mt-2 sm:mt-3 space-y-2 animate-pulse">
+                <div className="h-5 sm:h-8 w-48 sm:w-72 bg-borderColor rounded-md" />
+                <div className="h-3 sm:h-4 w-full max-w-md bg-borderColor/70 rounded-md" />
+                <div className="h-3 sm:h-4 w-3/4 max-w-sm bg-borderColor/50 rounded-md" />
+              </div>
+            ) : (
+              <>
+                <h1 className="mt-1 sm:mt-2 text-base sm:text-2xl md:text-3xl font-bold text-white">
+                  {user?.name ? `${user.name}'s Trading Desk` : "Your Trading Command Center"}
+                </h1>
+                <p className="mt-1 sm:mt-2 text-[10px] sm:text-sm text-gray-400 max-w-xl leading-relaxed">
+                  Real-time portfolio intelligence with instant P&L movement, live allocation mix, and top
+                  holdings performance.
+                </p>
+              </>
+            )}
           </div>
           <div className="rounded-lg sm:rounded-xl border border-borderColor bg-black/30 backdrop-blur-md px-3 py-2.5 sm:px-5 sm:py-4 min-w-0 sm:min-w-[220px]">
             <p className="text-[9px] sm:text-xs text-gray-400">Market Pulse</p>
-            <p
-              className={`text-sm sm:text-lg font-semibold mt-0.5 sm:mt-1 ${
-                trend === "up"
-                  ? "text-green-400"
-                  : trend === "down"
-                  ? "text-red-400"
-                  : "text-gray-300"
-              }`}
-            >
-              {trend === "up" ? "▲ Trending Up" : trend === "down" ? "▼ Trending Down" : "— Stable"}
-            </p>
-            <p className="text-[9px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">Holdings: {stats.holdings}</p>
+            {chartLoading || statsLoading ? (
+              <div className="mt-1.5 space-y-2 animate-pulse">
+                <div className="h-4 sm:h-5 w-28 bg-borderColor rounded" />
+                <div className="h-3 w-20 bg-borderColor/60 rounded" />
+              </div>
+            ) : (
+              <>
+                <p
+                  className={`text-sm sm:text-lg font-semibold mt-0.5 sm:mt-1 ${
+                    trend === "up"
+                      ? "text-green-400"
+                      : trend === "down"
+                      ? "text-red-400"
+                      : "text-gray-300"
+                  }`}
+                >
+                  {trend === "up" ? "▲ Trending Up" : trend === "down" ? "▼ Trending Down" : "— Stable"}
+                </p>
+                <p className="text-[9px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">Holdings: {stats.holdings}</p>
+              </>
+            )}
           </div>
         </div>
       </section>
 
       <section className="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-4">
-        {kpiCards.map((card) => (
-          <KpiCard
-            key={card.title}
-            title={card.title}
-            value={card.value}
-            tone={card.tone}
-            sub={card.sub}
-          />
-        ))}
+        {statsLoading
+          ? [...Array(6)].map((_, i) => <KpiCardSkeleton key={i} />)
+          : kpiCards.map((card) => (
+              <KpiCard
+                key={card.title}
+                title={card.title}
+                value={card.value}
+                tone={card.tone}
+                sub={card.sub}
+              />
+            ))}
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2 sm:gap-4 min-w-0">
@@ -356,168 +398,180 @@ function Dashboard() {
               <p className="text-[9px] sm:text-xs text-gray-400">Performance</p>
               <h2 className="text-xs sm:text-lg font-semibold text-white">Live P&L Trend</h2>
             </div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <select
-                value={selectedWindowMinutes}
-                onChange={(e) => setSelectedWindowMinutes(Number(e.target.value))}
-                className="bg-slate-900 border border-borderColor rounded-md sm:rounded-lg px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs text-gray-200 outline-none"
-              >
-                <option value={5}>5 min</option>
-                <option value={10}>10 min</option>
-                <option value={15}>15 min</option>
-                <option value={30}>30 min</option>
-                <option value={60}>60 min</option>
-              </select>
-              <p
-                className={`text-xs sm:text-lg font-semibold tracking-tight ${stats.pnl >= 0 ? "text-green-400" : "text-red-400"}`}
-                style={{ fontFamily: "'JetBrains Mono', monospace" }}
-              >
-                ₹ {formatNumber(stats.pnl.toFixed(2))}
-              </p>
-            </div>
+            {!chartLoading && (
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <select
+                  value={selectedWindowMinutes}
+                  onChange={(e) => setSelectedWindowMinutes(Number(e.target.value))}
+                  className="bg-slate-900 border border-borderColor rounded-md sm:rounded-lg px-1.5 py-0.5 sm:px-2 sm:py-1 text-[10px] sm:text-xs text-gray-200 outline-none"
+                >
+                  <option value={5}>5 min</option>
+                  <option value={10}>10 min</option>
+                  <option value={15}>15 min</option>
+                  <option value={30}>30 min</option>
+                  <option value={60}>60 min</option>
+                </select>
+                <p
+                  className={`text-xs sm:text-lg font-semibold tracking-tight ${stats.pnl >= 0 ? "text-green-400" : "text-red-400"}`}
+                  style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                >
+                  ₹ {formatNumber(stats.pnl.toFixed(2))}
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 min-h-[12rem] sm:min-h-[16rem] min-w-0 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={areaChartData}>
-                <defs>
-                  <linearGradient id="pnlGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={stats.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0.35} />
-                    <stop offset="95%" stopColor={stats.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="t" tick={{ fill: "#94a3b8", fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                <YAxis
-                  tick={{ fill: "#94a3b8", fontSize: 9 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={52}
-                  tickFormatter={(value) => `₹${formatNumber(Number(value).toFixed(0))}`}
-                />
-                <Tooltip
-                  formatter={(value) => [`₹ ${formatNumber(Number(value).toFixed(2))}`, "P&L"]}
-                  contentStyle={{
-                    background: "#0f172a",
-                    border: "1px solid #1f2937",
-                    borderRadius: "12px",
-                    color: "#fff",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="pnl"
-                  stroke={stats.pnl >= 0 ? "#22c55e" : "#ef4444"}
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#pnlGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {chartLoading ? (
+              <ChartSkeleton />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={areaChartData}>
+                  <defs>
+                    <linearGradient id="pnlGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={stats.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0.35} />
+                      <stop offset="95%" stopColor={stats.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="t" tick={{ fill: "#94a3b8", fontSize: 9 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                  <YAxis
+                    tick={{ fill: "#94a3b8", fontSize: 9 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={52}
+                    tickFormatter={(value) => `₹${formatNumber(Number(value).toFixed(0))}`}
+                  />
+                  <Tooltip
+                    formatter={(value) => [`₹ ${formatNumber(Number(value).toFixed(2))}`, "P&L"]}
+                    contentStyle={{
+                      background: "#0f172a",
+                      border: "1px solid #1f2937",
+                      borderRadius: "12px",
+                      color: "#fff",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="pnl"
+                    stroke={stats.pnl >= 0 ? "#22c55e" : "#ef4444"}
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#pnlGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
         <div className="min-w-0 overflow-hidden rounded-xl sm:rounded-2xl border border-borderColor bg-cardBg p-3 sm:p-4 md:p-5">
           <p className="text-[9px] sm:text-xs text-gray-400">Exposure Mix</p>
           <h2 className="text-xs sm:text-lg font-semibold text-white mb-2 sm:mb-4">Allocation by Exchange</h2>
-          <div className="min-w-0 h-44 sm:h-60">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={allocationData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius="35%"
-                  outerRadius="55%"
-                  paddingAngle={3}
-                >
-                  {allocationData.map((entry, index) => (
-                    <Cell key={`${entry.name}-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value, name, ctx) => {
-                    const rawCurrent = ctx?.payload?.current;
-                    if (typeof rawCurrent === "number") {
-                      return [`₹ ${formatNumber(rawCurrent.toFixed(2))}`, name];
-                    }
-                    return `₹ ${formatNumber(Number(value).toFixed(2))}`;
-                  }}
-                  contentStyle={{
-                    background: "#0f172a",
-                    border: "1px solid #1f2937",
-                    borderRadius: "12px",
-                    color: "#fff",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-2 sm:mt-3 min-w-0">
-            <table className="w-full table-fixed border-collapse text-[9px] sm:text-xs tabular-nums">
-              <colgroup>
-                <col style={{ width: "26%" }} />
-                <col />
-                <col className="hidden sm:table-column" style={{ width: "26%" }} />
-                <col />
-              </colgroup>
-              <thead>
-                <tr className="text-left text-gray-400 border-b border-borderColor">
-                  <th className="py-1.5 sm:py-2 pr-1 font-medium">Segment</th>
-                  <th className="py-1.5 sm:py-2 px-0.5 font-medium text-right">Current</th>
-                  <th className="py-1.5 sm:py-2 px-0.5 font-medium text-right hidden sm:table-cell">Invested</th>
-                  <th className="py-1.5 sm:py-2 pl-0.5 font-medium text-right">P&L</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allocationData.map((entry, index) => {
-                  const currentStr = `₹${formatNumber(entry.current.toFixed(0))}`;
-                  const investedStr = `₹${formatNumber(entry.invested.toFixed(2))}`;
-                  const pnlStr = `${entry.pnl >= 0 ? "+" : ""}₹${formatNumber(entry.pnl.toFixed(2))}`;
-                  return (
-                  <tr key={`${entry.name}-${index}`} className="border-b border-borderColor/60">
-                    <td className="py-1.5 sm:py-2 pr-1 text-gray-300 align-middle min-w-0">
-                      <span className="inline-flex items-center gap-1 sm:gap-2 min-w-0 max-w-full">
-                        <span
-                          className="inline-block h-1.5 w-1.5 sm:h-2.5 sm:w-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: entry.color }}
-                        />
-                        <span className="truncate min-w-0">{entry.name}</span>
-                      </span>
-                    </td>
-                    <td
-                      className="py-1.5 sm:py-2 px-0.5 text-right text-gray-200 text-[8px] sm:text-[13px] leading-tight align-middle min-w-0"
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                      title={currentStr}
+          {statsLoading ? (
+            <AllocationSkeleton />
+          ) : (
+            <>
+              <div className="min-w-0 h-44 sm:h-60">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={allocationData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius="35%"
+                      outerRadius="55%"
+                      paddingAngle={3}
                     >
-                      <span className="block w-full truncate text-right">{currentStr}</span>
-                    </td>
-                    <td
-                      className="py-1.5 sm:py-2 px-0.5 text-right text-gray-200 text-[8px] sm:text-[13px] leading-tight hidden sm:table-cell align-middle min-w-0"
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                      title={investedStr}
-                    >
-                      <span className="block w-full truncate text-right">{investedStr}</span>
-                    </td>
-                    <td
-                      className={`py-1.5 sm:py-2 pl-0.5 text-right text-[8px] sm:text-[13px] leading-tight align-middle min-w-0 ${
-                        entry.pnl > 0
-                          ? "text-green-400"
-                          : entry.pnl < 0
-                          ? "text-red-400"
-                          : "text-gray-300"
-                      }`}
-                      title={pnlStr}
-                    >
-                      <span className="block w-full truncate text-right">{pnlStr}</span>
-                    </td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      {allocationData.map((entry, index) => (
+                        <Cell key={`${entry.name}-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value, name, ctx) => {
+                        const rawCurrent = ctx?.payload?.current;
+                        if (typeof rawCurrent === "number") {
+                          return [`₹ ${formatNumber(rawCurrent.toFixed(2))}`, name];
+                        }
+                        return `₹ ${formatNumber(Number(value).toFixed(2))}`;
+                      }}
+                      contentStyle={{
+                        background: "#0f172a",
+                        border: "1px solid #1f2937",
+                        borderRadius: "12px",
+                        color: "#fff",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-2 sm:mt-3 min-w-0">
+                <table className="w-full table-fixed border-collapse text-[9px] sm:text-xs tabular-nums">
+                  <colgroup>
+                    <col style={{ width: "26%" }} />
+                    <col />
+                    <col className="hidden sm:table-column" style={{ width: "26%" }} />
+                    <col />
+                  </colgroup>
+                  <thead>
+                    <tr className="text-left text-gray-400 border-b border-borderColor">
+                      <th className="py-1.5 sm:py-2 pr-1 font-medium">Segment</th>
+                      <th className="py-1.5 sm:py-2 px-0.5 font-medium text-right">Current</th>
+                      <th className="py-1.5 sm:py-2 px-0.5 font-medium text-right hidden sm:table-cell">Invested</th>
+                      <th className="py-1.5 sm:py-2 pl-0.5 font-medium text-right">P&L</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allocationData.map((entry, index) => {
+                      const currentStr = `₹${formatNumber(entry.current.toFixed(0))}`;
+                      const investedStr = `₹${formatNumber(entry.invested.toFixed(2))}`;
+                      const pnlStr = `${entry.pnl >= 0 ? "+" : ""}₹${formatNumber(entry.pnl.toFixed(2))}`;
+                      return (
+                      <tr key={`${entry.name}-${index}`} className="border-b border-borderColor/60">
+                        <td className="py-1.5 sm:py-2 pr-1 text-gray-300 align-middle min-w-0">
+                          <span className="inline-flex items-center gap-1 sm:gap-2 min-w-0 max-w-full">
+                            <span
+                              className="inline-block h-1.5 w-1.5 sm:h-2.5 sm:w-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: entry.color }}
+                            />
+                            <span className="truncate min-w-0">{entry.name}</span>
+                          </span>
+                        </td>
+                        <td
+                          className="py-1.5 sm:py-2 px-0.5 text-right text-gray-200 text-[8px] sm:text-[13px] leading-tight align-middle min-w-0"
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                          title={currentStr}
+                        >
+                          <span className="block w-full truncate text-right">{currentStr}</span>
+                        </td>
+                        <td
+                          className="py-1.5 sm:py-2 px-0.5 text-right text-gray-200 text-[8px] sm:text-[13px] leading-tight hidden sm:table-cell align-middle min-w-0"
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                          title={investedStr}
+                        >
+                          <span className="block w-full truncate text-right">{investedStr}</span>
+                        </td>
+                        <td
+                          className={`py-1.5 sm:py-2 pl-0.5 text-right text-[8px] sm:text-[13px] leading-tight align-middle min-w-0 ${
+                            entry.pnl > 0
+                              ? "text-green-400"
+                              : entry.pnl < 0
+                              ? "text-red-400"
+                              : "text-gray-300"
+                          }`}
+                          title={pnlStr}
+                        >
+                          <span className="block w-full truncate text-right">{pnlStr}</span>
+                        </td>
+                      </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -529,79 +583,85 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Mobile: Card layout */}
-        <div className="sm:hidden space-y-2">
-          {topHoldings.length === 0 ? (
-            <div className="py-6 text-center text-gray-500 text-[10px]">No positions available yet.</div>
-          ) : (
-            topHoldings.map((row) => (
-              <div key={`${row.code}-${row.exch}`} className="rounded-lg border border-borderColor/60 bg-black/20 p-2.5">
-                <div className="flex items-center justify-between mb-1.5">
-                  <div>
-                    <div className="text-[10px] font-semibold text-textPrimary truncate max-w-[140px]" style={{ fontFamily: "'Syne', sans-serif" }}>{row.name}</div>
-                    <div className="text-[8px] text-gray-500">{row.symbol} | {row.exch === "N" ? "NSE" : row.exch === "B" ? "BSE" : "MCX"}</div>
-                  </div>
-                  <div
-                    className={`text-[11px] font-semibold tracking-tight ${row.pnl >= 0 ? "text-green-400" : "text-red-400"}`}
-                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                  >
-                    ₹{formatNumber(row.pnl.toFixed(2))}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-[8px] text-gray-400">
-                  <span>Qty: <span className="text-gray-200">{row.qty}</span></span>
-                  <span>Avg: <span className="text-gray-200">₹{formatNumber(row.avg.toFixed(2))}</span></span>
-                  <span>LTP: <span className="text-gray-200">₹{formatNumber(row.ltp.toFixed(2))}</span></span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Desktop: Table layout */}
-        <div className="hidden sm:block">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-400 border-b border-borderColor">
-                <th className="py-3 font-medium">Name</th>
-                <th className="py-3 font-medium text-right">Qty</th>
-                <th className="py-3 font-medium text-right">Avg</th>
-                <th className="py-3 font-medium text-right">LTP</th>
-                <th className="py-3 font-medium text-right">Current</th>
-                <th className="py-3 font-medium text-right">P&L</th>
-              </tr>
-            </thead>
-            <tbody>
+        {topHoldingsLoading ? (
+          <TopHoldingsSkeleton />
+        ) : (
+          <>
+            {/* Mobile: Card layout */}
+            <div className="sm:hidden space-y-2">
               {topHoldings.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500">
-                    No positions available yet.
-                  </td>
-                </tr>
+                <div className="py-6 text-center text-gray-500 text-[10px]">No positions available yet.</div>
               ) : (
                 topHoldings.map((row) => (
-                  <tr key={`${row.code}-${row.exch}`} className="border-b border-borderColor/70">
-                    <td className="py-3 text-textPrimary">
-                      <div className="text-[14px] font-semibold tracking-tight text-textPrimary" style={{ fontFamily: "'Syne', sans-serif" }}>{row.name}</div>
-                      <div className="text-[12px] text-textSubtle">
-                        {row.symbol} | {row.exch === "N" ? "NSE" : row.exch === "B" ? "BSE" : "MCX"}</div>
-                    </td>
-                    <td className="py-3 text-right text-gray-200 text-[14px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{row.qty}</td>
-                    <td className="py-3 text-right text-gray-200">₹ {formatNumber(row.avg.toFixed(2))}</td>
-                    <td className="py-3 text-right text-gray-200">₹ {formatNumber(row.ltp.toFixed(2))}</td>
-                    <td className="py-3 text-right text-gray-200">₹ {formatNumber(row.current.toFixed(2))}</td>
-                    <td
-                      className={`py-3 text-right font-semibold text-[14.5px] tracking-tight ${row.pnl >= 0 ? "text-green-400" : "text-red-400"}`}
-                      style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                    >
-                      ₹ {formatNumber(row.pnl.toFixed(2))}
-                    </td>
-                  </tr>
+                  <div key={`${row.code}-${row.exch}`} className="rounded-lg border border-borderColor/60 bg-black/20 p-2.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div>
+                        <div className="text-[10px] font-semibold text-textPrimary truncate max-w-[140px]" style={{ fontFamily: "'Syne', sans-serif" }}>{row.name}</div>
+                        <div className="text-[8px] text-gray-500">{row.symbol} | {row.exch === "N" ? "NSE" : row.exch === "B" ? "BSE" : "MCX"}</div>
+                      </div>
+                      <div
+                        className={`text-[11px] font-semibold tracking-tight ${row.pnl >= 0 ? "text-green-400" : "text-red-400"}`}
+                        style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                      >
+                        ₹{formatNumber(row.pnl.toFixed(2))}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-[8px] text-gray-400">
+                      <span>Qty: <span className="text-gray-200">{row.qty}</span></span>
+                      <span>Avg: <span className="text-gray-200">₹{formatNumber(row.avg.toFixed(2))}</span></span>
+                      <span>LTP: <span className="text-gray-200">₹{formatNumber(row.ltp.toFixed(2))}</span></span>
+                    </div>
+                  </div>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+            </div>
+
+            {/* Desktop: Table layout */}
+            <div className="hidden sm:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-400 border-b border-borderColor">
+                    <th className="py-3 font-medium">Name</th>
+                    <th className="py-3 font-medium text-right">Qty</th>
+                    <th className="py-3 font-medium text-right">Avg</th>
+                    <th className="py-3 font-medium text-right">LTP</th>
+                    <th className="py-3 font-medium text-right">Current</th>
+                    <th className="py-3 font-medium text-right">P&L</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topHoldings.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-8 text-center text-gray-500">
+                        No positions available yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    topHoldings.map((row) => (
+                      <tr key={`${row.code}-${row.exch}`} className="border-b border-borderColor/70">
+                        <td className="py-3 text-textPrimary">
+                          <div className="text-[14px] font-semibold tracking-tight text-textPrimary" style={{ fontFamily: "'Syne', sans-serif" }}>{row.name}</div>
+                          <div className="text-[12px] text-textSubtle">
+                            {row.symbol} | {row.exch === "N" ? "NSE" : row.exch === "B" ? "BSE" : "MCX"}</div>
+                        </td>
+                        <td className="py-3 text-right text-gray-200 text-[14px]" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{row.qty}</td>
+                        <td className="py-3 text-right text-gray-200">₹ {formatNumber(row.avg.toFixed(2))}</td>
+                        <td className="py-3 text-right text-gray-200">₹ {formatNumber(row.ltp.toFixed(2))}</td>
+                        <td className="py-3 text-right text-gray-200">₹ {formatNumber(row.current.toFixed(2))}</td>
+                        <td
+                          className={`py-3 text-right font-semibold text-[14.5px] tracking-tight ${row.pnl >= 0 ? "text-green-400" : "text-red-400"}`}
+                          style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                        >
+                          ₹ {formatNumber(row.pnl.toFixed(2))}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </section>
     </div>
   );
@@ -615,6 +675,81 @@ const LIGHT_KPI_TONES = {
   "text-green-400": "text-green-700",
   "text-red-400": "text-red-700",
 };
+
+const KpiCardSkeleton = () => (
+  <div className="rounded-lg sm:rounded-xl border border-borderColor bg-cardBg p-2.5 sm:p-4 animate-pulse">
+    <div className="h-2 sm:h-3 w-14 sm:w-20 bg-borderColor rounded" />
+    <div className="mt-2 sm:mt-3 h-4 sm:h-7 w-20 sm:w-32 bg-borderColor rounded" />
+    <div className="mt-1.5 h-2 w-10 bg-borderColor/70 rounded" />
+  </div>
+);
+
+const ChartSkeleton = () => (
+  <div className="h-full min-h-[12rem] sm:min-h-[16rem] w-full animate-pulse flex flex-col justify-end gap-2 p-1">
+    <div className="flex items-end gap-1.5 sm:gap-2 h-full">
+      {[40, 55, 35, 70, 45, 80, 50, 65, 42, 75, 58, 68].map((h, i) => (
+        <div
+          key={i}
+          className="flex-1 rounded-t bg-borderColor/80"
+          style={{ height: `${h}%` }}
+        />
+      ))}
+    </div>
+    <div className="h-2 w-full bg-borderColor/50 rounded" />
+  </div>
+);
+
+const AllocationSkeleton = () => (
+  <div className="animate-pulse">
+    <div className="mx-auto h-36 w-36 sm:h-48 sm:w-48 rounded-full border-[18px] sm:border-[24px] border-borderColor" />
+    <div className="mt-4 space-y-2">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="flex items-center justify-between gap-2">
+          <div className="h-2.5 w-20 bg-borderColor rounded" />
+          <div className="h-2.5 w-16 bg-borderColor rounded" />
+          <div className="h-2.5 w-14 bg-borderColor rounded hidden sm:block" />
+          <div className="h-2.5 w-14 bg-borderColor rounded" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const TopHoldingsSkeleton = () => (
+  <div className="animate-pulse space-y-2 sm:space-y-0">
+    <div className="sm:hidden space-y-2">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="rounded-lg border border-borderColor p-2.5 space-y-2">
+          <div className="flex justify-between">
+            <div className="space-y-1.5">
+              <div className="h-3 w-28 bg-borderColor rounded" />
+              <div className="h-2 w-16 bg-borderColor/70 rounded" />
+            </div>
+            <div className="h-3 w-14 bg-borderColor rounded" />
+          </div>
+          <div className="flex justify-between">
+            <div className="h-2 w-12 bg-borderColor/60 rounded" />
+            <div className="h-2 w-14 bg-borderColor/60 rounded" />
+            <div className="h-2 w-14 bg-borderColor/60 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+    <div className="hidden sm:block space-y-3 pt-2">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="grid grid-cols-6 gap-4 items-center border-b border-borderColor pb-3">
+          <div className="space-y-1.5 col-span-1">
+            <div className="h-3 w-28 bg-borderColor rounded" />
+            <div className="h-2 w-20 bg-borderColor/70 rounded" />
+          </div>
+          {[...Array(5)].map((__, j) => (
+            <div key={j} className="h-3 w-14 bg-borderColor rounded ml-auto" />
+          ))}
+        </div>
+      ))}
+    </div>
+  </div>
+);
 
 const KpiCard = ({ title, value, tone, sub }) => {
   const theme = useThemeStore((s) => s.theme);

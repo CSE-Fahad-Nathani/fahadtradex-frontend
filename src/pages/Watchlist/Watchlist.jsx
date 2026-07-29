@@ -10,6 +10,7 @@ import { useUserStore } from "../../store/userStore";
 import { useNavigate } from "react-router-dom";
 import SetTargetModal from "../../components/common/SetTargetModal";
 import { fetchUserData } from "../../services/user.service";
+import { useThemeStore } from "../../store/themeStore";
 
 
 
@@ -26,7 +27,75 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
   const [targetStock, setTargetStock] = useState(null);
   const [savingTarget, setSavingTarget] = useState(false);
   const user = useUserStore((s) => s.user);
-
+  const theme = useThemeStore((s) => s.theme);
+  const isLight = theme === "light";
+  const labelClass = isLight ? "text-slate-600" : "text-textSubtle";
+  const profitColor = (positive) =>
+    isLight ? (positive ? "#15803d" : "#b91c1c") : positive ? "#22d38a" : "#ff4d6a";
+  const profitColorMuted = (positive) =>
+    isLight ? (positive ? "rgba(21,128,61,0.7)" : "rgba(185,28,28,0.7)") : positive ? "#22d38a80" : "#ff4d6a80";
+  const getTargetColor = (pct) => {
+    if (pct == null) return isLight ? "#64748b" : "#5a5f78";
+    if (pct >= 100) return profitColor(true);
+    if (pct >= 0) return "#7c6fff";
+    return profitColor(false);
+  };
+  const mobileStatsPanelStyle = isLight
+    ? { background: "var(--color-surface-subtle)", border: "1px solid var(--color-border)" }
+    : { background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" };
+  const mobileActionBarStyle = isLight
+    ? { borderColor: "var(--color-border)", background: "var(--color-surface-subtle)" }
+    : { borderColor: "rgba(255,255,255,0.04)", background: "rgba(255,255,255,0.01)" };
+  const pageSizeInactiveStyle = isLight
+    ? { background: "transparent", color: "#64748b", border: "1px solid var(--color-border)" }
+    : { background: "transparent", color: "#5a5f78", border: "1px solid rgba(255,255,255,0.08)" };
+  const isExpiredMcxContract = (item) => {
+    if (item.exchange !== "M" || !item.expiry) return false;
+    const expiryTime = new Date(`${item.expiry}T23:59:59`).getTime();
+    return Number.isFinite(expiryTime) && expiryTime < Date.now();
+  };
+  const formatExpiryLabel = (expiry) => {
+    if (!expiry) return "";
+    const date = new Date(`${expiry}T00:00:00`);
+    if (!Number.isFinite(date.getTime())) return expiry;
+    return date.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  };
+  const ExpiredRowOverlay = ({ expiry, onRemove }) => (
+    <div className="absolute inset-0 z-10 flex items-center justify-center">
+      <div
+        className="absolute inset-0"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: isLight ? "rgba(248,250,252,0.78)" : "rgba(11,15,25,0.78)",
+          backdropFilter: "blur(1.5px)",
+        }}
+      />
+      <div className="relative flex flex-col items-center gap-2 px-6 text-center">
+        {expiry && (
+          <span
+            className="text-[10px] font-medium text-textMuted"
+            style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+          >
+            Expired {formatExpiryLabel(expiry)}
+          </span>
+        )}
+        <div className="flex items-center gap-3 w-full min-w-[200px] max-w-[280px]">
+          <div className="flex-1 h-px bg-borderColor" />
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            className={`text-[10px] font-semibold uppercase tracking-[0.14em] whitespace-nowrap transition-colors hover:opacity-80 ${isLight ? "text-red-700" : "text-red-400"}`}
+          >
+            Remove from watchlist
+          </button>
+          <div className="flex-1 h-px bg-borderColor" />
+        </div>
+      </div>
+    </div>
+  );
 
   const navigate = useNavigate();
 
@@ -326,8 +395,8 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
               {[...Array(5)].map((_, i) => (
                 <div key={i} className="rounded-xl border border-borderColor/40 bg-cardBg p-3.5">
                   <div className="flex justify-between">
-                    <div className="space-y-2"><div className="h-3 w-28 bg-white/[0.06] rounded-md" /><div className="h-2 w-16 bg-white/[0.04] rounded-md" /></div>
-                    <div className="space-y-2 text-right"><div className="h-3 w-16 bg-white/[0.06] rounded-md ml-auto" /><div className="h-2 w-20 bg-white/[0.04] rounded-md ml-auto" /></div>
+                    <div className="space-y-2"><div className="h-3 w-28 bg-borderColor rounded-md" /><div className="h-2 w-16 bg-borderColor/70 rounded-md" /></div>
+                    <div className="space-y-2 text-right"><div className="h-3 w-16 bg-borderColor rounded-md ml-auto" /><div className="h-2 w-20 bg-borderColor/70 rounded-md ml-auto" /></div>
                   </div>
                 </div>
               ))}
@@ -339,6 +408,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
             const live = liveData[token];
             const initialPrice = Number(item.initialPrice);
             const targetPrice = Number(item.targetPrice);
+            const isExpired = isExpiredMcxContract(item);
             const hasInitial = Number.isFinite(initialPrice) && initialPrice > 0;
             const hasTarget = Number.isFinite(targetPrice) && targetPrice > 0;
             const hasLtp = Number.isFinite(Number(live?.LastRate)) && Number(live?.LastRate) > 0;
@@ -348,33 +418,36 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
             if (hasInitial && hasTarget && hasLtp && targetPrice !== initialPrice) {
               targetProgressPct = ((Number(live.LastRate) - initialPrice) / (targetPrice - initialPrice)) * 100;
             }
-            const targetColor = targetProgressPct == null ? "#5a5f78" : targetProgressPct >= 100 ? "#22d38a" : targetProgressPct >= 0 ? "#7c6fff" : "#ff4d6a";
+            const targetColor = getTargetColor(targetProgressPct);
             const changePct = live?.ChgPcnt;
             const changeAbs = live ? (live.LastRate - live.PClose) : null;
+            const actionDivider = isLight ? "var(--color-border)" : "rgba(255,255,255,0.04)";
 
             return (
               <div
                 key={item.stockId || i}
                 onClick={() => navigate(`/stock/${item.exchange}/${item.exchangeType}/${item.scripCode}/${item.symbol}`)}
-                className="rounded-xl border border-borderColor/60 bg-cardBg active:bg-[var(--color-row-hover)] cursor-pointer overflow-hidden"
-                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.2)", margin:"10px" }}
+                className={`relative rounded-xl border bg-black active:bg-[#0a0a0a] cursor-pointer overflow-hidden ${
+                  isExpired ? "border-borderColor/80" : "border-borderColor/60"
+                }`}
+                style={{ boxShadow: isLight ? "0 1px 3px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.2)", margin: "10px" }}
               >
                 {/* Main content */}
                 <div className="px-3.5 pt-3 pb-2.5">
                   {/* Header: Name + LTP */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="text-[12px] font-bold tracking-tight truncate" style={{ fontFamily: "'Syne', sans-serif", color: "#f0f2f8" }}>{item.name}</p>
+                      <p className="text-[12px] font-bold tracking-tight truncate text-textPrimary" style={{ fontFamily: "'Syne', sans-serif" }}>{item.name}</p>
                       <div className="flex items-center gap-1.5 mt-1">
                         <span
                           className="text-[7px] font-bold uppercase tracking-[0.8px] rounded-[4px] px-1.5 py-[2px]"
                           style={{ background: "rgba(124,111,255,0.15)", color: "#9d8fff", border: "1px solid rgba(124,111,255,0.15)" }}
                         >{exchLabel}</span>
-                        <span className="text-[9px] font-medium tracking-wide" style={{ color: "#6b7094" }}>{item.symbol}</span>
+                        <span className={`text-[9px] font-medium tracking-wide ${labelClass}`}>{item.symbol}</span>
                       </div>
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-[14px] font-bold tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace", color: isUp ? "#22d38a" : "#ff4d6a" }}>
+                      <p className="text-[14px] font-bold tracking-tight" style={{ fontFamily: "'JetBrains Mono', monospace", color: profitColor(isUp) }}>
                         ₹{live ? formatNumber(live.LastRate) : "—"}
                       </p>
                       <div className="flex items-center justify-end gap-1 mt-0.5">
@@ -382,14 +455,14 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                           <span
                             className="text-[9px] font-semibold px-1.5 py-[1px] rounded-[4px]"
                             style={{
-                              color: isUp ? "#22d38a" : "#ff4d6a",
+                              color: profitColor(isUp),
                               background: isUp ? "rgba(34,211,138,0.1)" : "rgba(255,77,106,0.1)",
                             }}
                           >
                             {isUp ? "+" : ""}{changePct.toFixed(2)}%
                           </span>
                         )}
-                        <span className="text-[9px] font-medium" style={{ fontFamily: "'JetBrains Mono', monospace", color: isUp ? "#22d38a80" : "#ff4d6a80" }}>
+                        <span className="text-[9px] font-medium" style={{ fontFamily: "'JetBrains Mono', monospace", color: profitColorMuted(isUp) }}>
                           {changeAbs != null ? `${isUp ? "+" : ""}${changeAbs.toFixed(2)}` : ""}
                         </span>
                       </div>
@@ -397,10 +470,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                   </div>
 
                   {/* Stats grid */}
-                  <div
-                    className="grid grid-cols-4 gap-1 mt-2.5 rounded-lg px-2 py-2"
-                    style={{ background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}
-                  >
+                  <div className="grid grid-cols-4 gap-1 mt-2.5 rounded-lg px-2 py-2" style={mobileStatsPanelStyle}>
                     {[
                       { label: "HIGH", value: live ? formatNumber(live.High) : "—" },
                       { label: "LOW", value: live ? formatNumber(live.Low) : "—" },
@@ -408,8 +478,8 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                       { label: "CLOSE", value: live ? formatNumber(live.PClose) : "—" },
                     ].map((s) => (
                       <div key={s.label} className="text-center">
-                        <p className="text-[7px] font-semibold uppercase tracking-[0.8px]" style={{ color: "#4a4f68" }}>{s.label}</p>
-                        <p className="text-[10px] font-semibold mt-px" style={{ fontFamily: "'JetBrains Mono', monospace", color: "#c8cce0" }}>{s.value}</p>
+                        <p className={`text-[7px] font-semibold uppercase tracking-[0.8px] ${labelClass}`}>{s.label}</p>
+                        <p className="text-[10px] font-semibold mt-px text-textPrimary" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{s.value}</p>
                       </div>
                     ))}
                   </div>
@@ -418,12 +488,12 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                   {targetProgressPct != null && (
                     <div className="mt-2.5">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[7px] font-semibold uppercase tracking-[0.8px]" style={{ color: "#4a4f68" }}>Target Progress</span>
+                        <span className={`text-[7px] font-semibold uppercase tracking-[0.8px] ${labelClass}`}>Target Progress</span>
                         <span className="text-[9px] font-bold" style={{ fontFamily: "'JetBrains Mono', monospace", color: targetColor }}>
                           {targetProgressPct.toFixed(1)}%
                         </span>
                       </div>
-                      <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                      <div className="h-1 rounded-full overflow-hidden" style={{ background: isLight ? "var(--color-border)" : "rgba(255,255,255,0.06)" }}>
                         <div
                           className="h-full rounded-full transition-all duration-500"
                           style={{
@@ -433,48 +503,53 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                           }}
                         />
                       </div>
-                      <div className="flex justify-between mt-1 text-[7px]" style={{ fontFamily: "'JetBrains Mono', monospace", color: "#4a4f68" }}>
+                      <div className={`flex justify-between mt-1 text-[7px] ${labelClass}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                         <span>{hasInitial ? `₹${formatNumber(initialPrice.toFixed(0))}` : "—"}</span>
-                        <span style={{ color: "#7c6fff" }}>{hasTarget ? `₹${formatNumber(targetPrice.toFixed(0))}` : "—"}</span>
+                        <span className="text-[#7c6fff]">{hasTarget ? `₹${formatNumber(targetPrice.toFixed(0))}` : "—"}</span>
                       </div>
                     </div>
                   )}
                 </div>
 
                 {/* Action bar */}
-                <div
-                  className="flex items-center gap-0 border-t"
-                  style={{ borderColor: "rgba(255,255,255,0.04)", background: "rgba(255,255,255,0.01)" }}
-                >
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }}
-                    className="flex-1 py-2 text-[10px] font-bold tracking-wide transition-colors active:bg-white/[0.03]"
-                    style={{ color: "#22d38a", borderRight: "1px solid rgba(255,255,255,0.04)" }}
-                  >BUY</button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }}
-                    className="flex-1 py-2 text-[10px] font-bold tracking-wide transition-colors active:bg-white/[0.03]"
-                    style={{ color: "#ff4d6a", borderRight: "1px solid rgba(255,255,255,0.04)" }}
-                  >SELL</button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setTargetStock(item); setIsTargetModalOpen(true); }}
-                    className="flex-1 py-2 text-[10px] font-bold tracking-wide transition-colors active:bg-white/[0.03]"
-                    style={{ color: "#7c6fff", borderRight: "1px solid rgba(255,255,255,0.04)" }}
-                  >TARGET</button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleRemove(item); }}
-                    className="px-4 py-2 transition-colors active:bg-white/[0.03]"
-                  >
-                    <FiTrash2 size={12} style={{ color: "#ff4d6a" }} />
-                  </button>
-                </div>
+                {!isExpired && (
+                  <div className="relative z-20 flex items-center gap-0 border-t" style={mobileActionBarStyle}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }}
+                      className="flex-1 py-2 text-[10px] font-bold tracking-wide transition-colors active:bg-[var(--color-row-hover)]"
+                      style={{ color: profitColor(true), borderRight: `1px solid ${actionDivider}` }}
+                    >BUY</button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }}
+                      className="flex-1 py-2 text-[10px] font-bold tracking-wide transition-colors active:bg-[var(--color-row-hover)]"
+                      style={{ color: profitColor(false), borderRight: `1px solid ${actionDivider}` }}
+                    >SELL</button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setTargetStock(item); setIsTargetModalOpen(true); }}
+                      className="flex-1 py-2 text-[10px] font-bold tracking-wide transition-colors active:bg-[var(--color-row-hover)]"
+                      style={{ color: "#7c6fff", borderRight: `1px solid ${actionDivider}` }}
+                    >TARGET</button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleRemove(item); }}
+                      className="px-4 py-2 transition-colors active:bg-[var(--color-row-hover)]"
+                    >
+                      <FiTrash2 size={12} style={{ color: profitColor(false) }} />
+                    </button>
+                  </div>
+                )}
+                {isExpired && (
+                  <ExpiredRowOverlay
+                    expiry={item.expiry}
+                    onRemove={() => handleRemove(item)}
+                  />
+                )}
               </div>
             );
           })}
 
           {!loading && filteredData.length === 0 && (
             <div className="p-10 text-center rounded-xl border border-borderColor bg-cardBg">
-              <p className="text-[10px] font-medium" style={{ color: "#5a5f78" }}>
+              <p className={`text-[10px] font-medium ${labelClass}`}>
                 {searchQuery.trim() ? "No stocks match your search" : "No stocks in this watchlist"}
               </p>
             </div>
@@ -515,7 +590,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                     style={
                       pageSize === size
                         ? { background: "rgba(124,111,255,0.15)", color: "#7c6fff", border: "1px solid rgba(124,111,255,0.3)" }
-                        : { background: "transparent", color: "#5a5f78", border: "1px solid rgba(255,255,255,0.08)" }
+                        : pageSizeInactiveStyle
                     }
                   >
                     {size}
@@ -529,7 +604,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
 
       {/* ── Desktop Table ── */}
       <div
-        className="hidden sm:block rounded-[20px] border border-borderColor overflow-hidden bg-cardBg overflow-x-auto"
+        className="hidden sm:block rounded-[20px] border border-borderColor overflow-hidden bg-black overflow-x-auto"
         style={{ maxWidth: "99vw" }}
       >
         <div className="min-w-[900px]">
@@ -594,11 +669,11 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
           </div>
 
           {/* Body */}
-          <div style={{ maxHeight: "55vh", overflow: "auto" }}>
+          <div style={{ maxHeight: "55vh", overflow: "auto" }} className="bg-black">
             {loading && (
               <div className="animate-pulse">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="grid px-5 py-4 border-b border-borderColor" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1fr 1fr" }}>
+                  <div key={i} className="grid px-5 py-4 border-b border-borderColor bg-black" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1fr 1fr" }}>
                     <div className="space-y-2">
                       <div className="h-3 w-32 bg-borderColor rounded" />
                       <div className="h-2 w-20 bg-borderColor rounded" />
@@ -620,6 +695,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                 const live = liveData[token];
                 const initialPrice = Number(item.initialPrice);
                 const targetPrice = Number(item.targetPrice);
+                const isExpired = isExpiredMcxContract(item);
                 const hasInitial = Number.isFinite(initialPrice) && initialPrice > 0;
                 const hasTarget = Number.isFinite(targetPrice) && targetPrice > 0;
                 const hasLtp = Number.isFinite(Number(live?.LastRate)) && Number(live?.LastRate) > 0;
@@ -635,7 +711,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                   <div
                     key={item.stockId || i}
                     onClick={() => navigate(`/stock/${item.exchange}/${item.exchangeType}/${item.scripCode}/${item.symbol}`)}
-                    className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 hover:bg-[var(--color-row-hover)] cursor-pointer"
+                    className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 bg-black hover:bg-[#0a0a0a] cursor-pointer"
                     style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1fr 1fr" }}
                   >
                     <div className="text-left flex flex-col justify-center">
@@ -643,7 +719,9 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-[9px] font-semibold tracking-[0.5px] rounded px-1.5 py-0.5" style={{ background: "rgba(124,111,255,0.12)", color: "#7c6fff" }}>{exchLabel}</span>
                         <span className="text-[11px] font-medium text-textSubtle">{item.symbol}</span>
-                        <button onClick={(e) => { e.stopPropagation(); setTargetStock(item); setIsTargetModalOpen(true); }} className="text-[9px] font-semibold px-2 py-0.5 rounded-full transition-all duration-150" style={{ border: "1px solid rgba(34,211,138,0.3)", color: "#22d38a", background: "rgba(34,211,138,0.06)", letterSpacing: "0.3px" }}>Set Target</button>
+                        {!isExpired && (
+                          <button onClick={(e) => { e.stopPropagation(); setTargetStock(item); setIsTargetModalOpen(true); }} className="text-[9px] font-semibold px-2 py-0.5 rounded-full transition-all duration-150" style={{ border: "1px solid rgba(34,211,138,0.3)", color: "#22d38a", background: "rgba(34,211,138,0.06)", letterSpacing: "0.3px" }}>Set Target</button>
+                        )}
                       </div>
                     </div>
                     <div className="flex flex-col items-center">
@@ -667,11 +745,22 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
                         {targetProgressPct == null ? "—" : `${targetProgressPct.toFixed(2)}%`}
                       </span>
                     </div>
-                    <div style={{ height: "100%", paddingLeft: "10vh" }} className="row-actions-fade absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200">
-                      <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(34,211,138,0.3)", background: "rgba(34,211,138,0.07)", color: "#22d38a" }}>Buy</button>
-                      <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(255,77,106,0.3)", background: "rgba(255,77,106,0.07)", color: "#ff4d6a" }}>Sell</button>
-                      <button onClick={(e) => { e.stopPropagation(); handleRemove(item); }} className="p-1.5 rounded-lg transition" style={{ background: "rgba(255,77,106,0.07)", border: "1px solid rgba(255,77,106,0.2)" }}><FiTrash2 size={13} style={{ color: "#ff4d6a" }} /></button>
-                    </div>
+                    {!isExpired && (
+                      <div
+                        style={{ height: "100%", paddingLeft: "10vh" }}
+                        className="row-actions-fade absolute right-4 top-1/2 -translate-y-1/2 z-20 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                      >
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(34,211,138,0.3)", background: "rgba(34,211,138,0.07)", color: "#22d38a" }}>Buy</button>
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }} className="px-3 py-1 text-[11px] font-semibold rounded-lg transition" style={{ border: "1px solid rgba(255,77,106,0.3)", background: "rgba(255,77,106,0.07)", color: "#ff4d6a" }}>Sell</button>
+                        <button onClick={(e) => { e.stopPropagation(); handleRemove(item); }} className="p-1.5 rounded-lg transition" style={{ background: "rgba(255,77,106,0.07)", border: "1px solid rgba(255,77,106,0.2)" }}><FiTrash2 size={13} style={{ color: "#ff4d6a" }} /></button>
+                      </div>
+                    )}
+                    {isExpired && (
+                      <ExpiredRowOverlay
+                        expiry={item.expiry}
+                        onRemove={() => handleRemove(item)}
+                      />
+                    )}
                   </div>
                 );
               })}

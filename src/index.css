@@ -5,7 +5,7 @@
 :root,
 [data-theme="dark"] {
   --color-primary-bg: #0b0f19;
-  --color-card-bg: #111827;
+  --color-card-bg: #080808;
   --color-border: #1f2937;
   --color-text-primary: #f9fafb;
   --color-text-muted: #9ca3af;
@@ -13,7 +13,7 @@
   --color-accent: #00ffa3;
   --color-header-bg: #0b0f19;
   --color-sidebar-bg: #0b0f19;
-  --color-input-bg: #111827;
+  --color-input-bg: #080808;
   --color-overlay: rgba(0, 0, 0, 0.9);
   --color-row-hover: rgba(255, 255, 255, 0.025);
   --color-row-actions-fade: linear-gradient(
@@ -23,8 +23,8 @@
     rgba(23, 29, 44, 1) 100%
   );
   --color-surface-subtle: rgba(255, 255, 255, 0.02);
-  --color-nav-active: #111827;
-  --color-modal-bg: #111827;
+  --color-nav-active: #080808;
+  --color-modal-bg: #080808;
   --color-modal-overlay: rgba(0, 0, 0, 0.72);
   --color-surface-elevated: #0b0d12;
   --color-scrollbar-track: rgba(255, 255, 255, 0.05);
