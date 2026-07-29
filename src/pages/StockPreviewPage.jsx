@@ -6,6 +6,7 @@ import { formatNumber } from "../utils/formatNumber";
 import { createChart, CandlestickSeries } from "lightweight-charts";
 import TradeModal from "../components/trading/TradeModal";
 import { useThemeStore } from "../store/themeStore";
+import StockPreviewLoader from "../components/stock/StockPreviewLoader";
 
 const StockPreviewPage = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ const StockPreviewPage = () => {
   const chartInstance = useRef(null);
   const candleSeriesRef = useRef(null);
   const candlesFetchIdRef = useRef(0);
+  const hasBootstrappedRef = useRef(false);
   const theme = useThemeStore((s) => s.theme);
   const isLight = theme === "light";
   const labelClass = isLight ? "text-slate-600" : "text-textSubtle";
@@ -84,6 +86,7 @@ const StockPreviewPage = () => {
 
   const [snapshot, setSnapshot] = useState(null);
   const [candles, setCandles] = useState([]);
+  const [rawCandles, setRawCandles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [candlesLoading, setCandlesLoading] = useState(true);
 
@@ -117,6 +120,56 @@ const StockPreviewPage = () => {
   const multiplier = Number(searchParams.get("multiplier")) ||  stockDetails?.multiplier || 0;
   const [aiData, setAiData] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+
+  const exchLabel = exch === "N" ? "NSE" : exch === "B" ? "BSE" : "MCX";
+
+  const bootstrapSteps = useMemo(() => {
+    const market = loading ? "active" : snapshot ? "done" : "pending";
+    const candlesStep = loading
+      ? "pending"
+      : candlesLoading
+        ? "active"
+        : candles.length || noCandleData
+          ? "done"
+          : "pending";
+    const ai = loading || candlesLoading
+      ? "pending"
+      : aiLoading
+        ? "active"
+        : !loading && !candlesLoading
+          ? "done"
+          : "pending";
+
+    return { market, candles: candlesStep, ai };
+  }, [loading, snapshot, candlesLoading, candles.length, noCandleData, aiLoading]);
+
+  const bootstrapProgress = useMemo(() => {
+    const weights = { market: 35, candles: 35, ai: 30 };
+    let progress = 0;
+
+    if (bootstrapSteps.market === "done") progress += weights.market;
+    else if (bootstrapSteps.market === "active") progress += weights.market * 0.45;
+
+    if (bootstrapSteps.candles === "done") progress += weights.candles;
+    else if (bootstrapSteps.candles === "active") progress += weights.candles * 0.45;
+
+    if (bootstrapSteps.ai === "done") progress += weights.ai;
+    else if (bootstrapSteps.ai === "active") progress += weights.ai * 0.45;
+
+    return Math.min(100, Math.round(progress));
+  }, [bootstrapSteps]);
+
+  const isBootstrapping = !hasBootstrappedRef.current && (loading || candlesLoading || aiLoading);
+
+  useEffect(() => {
+    hasBootstrappedRef.current = false;
+  }, [exch, exchType, scripCode]);
+
+  useEffect(() => {
+    if (!loading && !candlesLoading && !aiLoading) {
+      hasBootstrappedRef.current = true;
+    }
+  }, [loading, candlesLoading, aiLoading]);
 
 
   useEffect(() => {
@@ -192,6 +245,7 @@ const StockPreviewPage = () => {
         );
         let successfulTimeframe = timeframe;
         let formatted = [];
+        let fetchedRawCandles = [];
 
         for (const candidate of timeframeCandidates) {
           const candleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/historical/data`, {
@@ -235,6 +289,7 @@ const StockPreviewPage = () => {
           formatted = Array.from(byTime.values()).sort((a, b) => a.time - b.time);
           if (formatted.length) {
             successfulTimeframe = candidate;
+            fetchedRawCandles = rawCandles;
             break;
           }
         }
@@ -242,6 +297,7 @@ const StockPreviewPage = () => {
         if (!formatted.length) {
           setNoCandleData(true);
           setCandles([]);
+          setRawCandles([]);
           return;
         }
 
@@ -251,11 +307,13 @@ const StockPreviewPage = () => {
 
         setNoCandleData(false);
         setCandles(formatted);
+        setRawCandles(fetchedRawCandles);
       } catch (err) {
         if (fetchId !== candlesFetchIdRef.current) return;
         console.error("Candle fetch error:", err);
         setNoCandleData(true);
         setCandles([]);
+        setRawCandles([]);
       } finally {
         if (fetchId === candlesFetchIdRef.current) {
           setCandlesLoading(false);
@@ -268,6 +326,8 @@ const StockPreviewPage = () => {
 
   useEffect(() => {
     if (!snapshot) return;
+    if (candlesLoading) return;
+
     const fetchAI = async () => {
       try {
         setAiLoading(true);
@@ -275,6 +335,8 @@ const StockPreviewPage = () => {
           name: symbol,
           exchange: exch === "N" ? "NSE" : exch === "B" ? "BSE" : "MCX",
           snapshot,
+          candles: rawCandles,
+          timeframe,
         };
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/ai/analyze`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         const data = await res.json();
@@ -286,7 +348,7 @@ const StockPreviewPage = () => {
       }
     };
     fetchAI();
-  }, [snapshot, symbol, exch]);
+  }, [snapshot, symbol, exch, rawCandles, timeframe, candlesLoading]);
 
   const snap = snapshot || {};
   const normalized = {
@@ -306,12 +368,11 @@ const StockPreviewPage = () => {
   const currentValue = exch === "M" ? 0.15 * normalized.ltp * qty * multiplier : normalized.ltp * qty;
   const pnl = exch === "M" ? ( normalized.ltp * qty * multiplier) - ( avgPrice * qty * multiplier) : currentValue - investedValue;
   const isProfit = pnl >= 0;
-  const exchLabel = exch === "N" ? "NSE" : exch === "B" ? "BSE" : "MCX";
 
   // Create chart only after the page has left the full-screen loader (chartRef exists in DOM).
   // Race: candles often arrive while `loading === true`, so chartRef is null on first effect run.
   useEffect(() => {
-    if (loading) return;
+    if (isBootstrapping) return;
     if (noCandleData) return;
     if (!candles.length) return;
 
@@ -412,16 +473,17 @@ const StockPreviewPage = () => {
       cancelAnimationFrame(rafId);
       destroyChart();
     };
-  }, [candles, theme, loading, noCandleData]);
+  }, [candles, theme, isBootstrapping, noCandleData]);
 
-  if (loading) {
+  if (isBootstrapping) {
     return (
-      <div className="flex items-center justify-center h-[calc(100dvh-7.25rem)] sm:h-[calc(100dvh-7rem)] bg-primaryBg">
-        <div className="text-center space-y-1.5 sm:space-y-2">
-          <div className="w-5 h-5 sm:w-6 sm:h-6 border border-blue-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className={`text-[10px] sm:text-xs font-mono ${labelClass}`}>Loading {symbol}...</p>
-        </div>
-      </div>
+      <StockPreviewLoader
+        symbol={stockDetails?.name || symbol}
+        exchangeLabel={`${symbol} · ${exchLabel} · ${exchType === "C" ? "Cash" : "Derivatives"}`}
+        steps={bootstrapSteps}
+        progress={bootstrapProgress}
+        isLight={isLight}
+      />
     );
   }
 
@@ -540,7 +602,7 @@ const StockPreviewPage = () => {
           ) : candlesLoading && candles.length === 0 ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center space-y-2">
               <div className="w-5 h-5 border border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <p className={`text-[10px] sm:text-xs font-mono ${labelClass}`}>Loading chart...</p>
+              <p className={`text-[10px] sm:text-xs font-mono ${labelClass}`}>Updating chart...</p>
             </div>
           ) : (
             <div ref={chartRef} className="w-full h-full min-h-[120px]" />
