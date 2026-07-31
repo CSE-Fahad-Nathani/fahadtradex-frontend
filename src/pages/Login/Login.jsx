@@ -10,8 +10,11 @@ import {
 } from "firebase/auth";
 import { auth } from "../../services/firebase";
 import { useNavigate, Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { TrendingUp, Zap, Cpu, ShieldCheck, Eye, EyeOff, ArrowRight, ArrowLeft, Info, X, Copy } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  TrendingUp, Zap, Cpu, ShieldCheck, Eye, EyeOff, ArrowRight, ArrowLeft,
+  Info, X, Copy, Loader2,
+} from "lucide-react";
 
 const DEMO_EMAIL = "fewatav994@codoteam.com";
 const DEMO_PASSWORD = "123456";
@@ -23,6 +26,34 @@ const pills = [
   { icon: ShieldCheck, label: "JWT-Secured" },
 ];
 
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getLoginErrorMessage = (error) => {
+  const code = error?.code || "";
+  const msg = (error?.response?.data?.message || error?.message || "").toLowerCase();
+
+  if (
+    code === "auth/wrong-password" ||
+    code === "auth/invalid-credential" ||
+    code === "auth/invalid-login-credentials" ||
+    msg.includes("wrong-password") ||
+    msg.includes("invalid-credential") ||
+    msg.includes("invalid credential")
+  ) {
+    return "Wrong password. Please check and try again.";
+  }
+  if (code === "auth/user-not-found" || msg.includes("user-not-found")) {
+    return "No account found with this email.";
+  }
+  if (code === "auth/too-many-requests") {
+    return "Too many attempts. Please wait and try again.";
+  }
+  if (code === "auth/network-request-failed") {
+    return "Network error. Check your connection and try again.";
+  }
+  return error?.response?.data?.message || error?.message || "Login failed. Please try again.";
+};
+
 function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
   const { showToast } = useToast();
   const [email, setEmail] = useState("");
@@ -30,7 +61,16 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showDemoInfo, setShowDemoInfo] = useState(false);
+  const [authView, setAuthView] = useState("form"); // form | progress
+  const [statusLabel, setStatusLabel] = useState("Signing you in...");
   const navigate = useNavigate();
+
+  const failAndReturn = (message) => {
+    showToast("error", message);
+    setAuthView("form");
+    setLoading(false);
+    setStatusLabel("Signing you in...");
+  };
 
   const copyDemoField = async (value, label) => {
     try {
@@ -42,133 +82,82 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
   };
 
   const handleLogin = async () => {
-
     if (loading) return;
-  
+
     if (!email.trim()) {
       showToast("error", "Please enter your email");
       return;
     }
-  
+
     if (!password.trim()) {
       showToast("error", "Please enter your password");
       return;
     }
-  
+
+    setLoading(true);
+    setAuthView("progress");
+    setStatusLabel("Signing you in...");
+
     try {
-  
-      setLoading(true);
-  
-      // ✅ Firebase login
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-  
+      await wait(300);
+      setStatusLabel("Verifying password...");
+
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
-  
-      // ✅ Check verification
+
       if (!firebaseUser.emailVerified) {
-  
-        showToast(
-          "error",
-          "Please verify your email before logging in."
-        );
-  
+        failAndReturn("Please verify your email before logging in.");
         return;
       }
-  
-      // ✅ Get Firebase token
+
+      setStatusLabel("Fetching account data...");
       const firebaseToken = await firebaseUser.getIdToken();
-  
-      // ✅ Backend login
-      const response = await api.post("/auth/login", {
-        firebaseToken
-      });
-  
+      const response = await api.post("/auth/login", { firebaseToken });
+
       if (!response.data.success) {
-        showToast("error", response.data.message);
+        failAndReturn(response.data.message || "Could not fetch account data.");
         return;
       }
-  
+
       const userName = response?.data?.data?.name;
       const userId = response?.data?.data?.userId;
-  
       const clientCode = response?.data?.data?.fivePaisa?.clientCode;
-  
       const { accessToken, fivePaisa } = response.data.data;
-  
-      // ✅ Store JWT
+
       localStorage.setItem("userName", userName);
       localStorage.setItem("userId", userId);
       localStorage.setItem("clientCode", clientCode);
       localStorage.setItem("token", accessToken);
       localStorage.setItem("email", email);
-  
+
       if (fivePaisa) {
-        localStorage.setItem(
-          "fivePaisaAccessToken",
-          fivePaisa.accessToken
-        );
-  
-        localStorage.setItem(
-          "clientCode",
-          fivePaisa.clientCode
-        );
+        localStorage.setItem("fivePaisaAccessToken", fivePaisa.accessToken);
+        localStorage.setItem("clientCode", fivePaisa.clientCode);
       }
-  
+
+      setStatusLabel("Preparing your session...");
+
       try {
-  
-        // const res = await fetch(
-        //   "http://localhost:3000/api/user/me",
-        const res = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/api/user/me`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`
-            },
-          }
-        );
-  
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/user/me`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
         const result = await res.json();
-  
         if (result.success) {
           useUserStore.getState().setUser(result.data);
         }
-  
       } catch (err) {
-  
-        console.error(
-          "User fetch after login failed:",
-          err
-        );
-  
+        console.error("User fetch after login failed:", err);
       }
-  
+
       showToast("success", "Login successful");
-  
       setLoadingLoginLoader(true);
-  
       setTimeout(() => navigate("/dashboard"), 800);
-  
     } catch (error) {
-  
       console.error(error);
-  
-      showToast(
-        "error",
-        error.response?.data?.message ||
-        error.message ||
-        "Login failed"
-      );
-  
+      failAndReturn(getLoginErrorMessage(error));
     } finally {
-  
       setLoading(false);
-  
     }
-  
   };
 
 
@@ -323,12 +312,61 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
           }}
         />
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.15 }}
-          className="relative z-10 w-full max-w-sm"
-        >
+        <AnimatePresence mode="wait">
+          {authView === "progress" ? (
+            <motion.div
+              key="login-progress"
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3 }}
+              className="relative z-10 w-full max-w-sm flex flex-col items-center text-center px-2"
+            >
+              <img src={logo} alt="FahadTradeX" className="h-8 sm:h-10 mb-6 opacity-90" />
+
+              <div className="relative mb-5">
+                <div className="absolute inset-0 rounded-full bg-accent/20 blur-xl" />
+                <div className="relative flex h-14 w-14 items-center justify-center rounded-full border border-accent/35 bg-accent/10">
+                  <Loader2 size={24} className="animate-spin text-accent" />
+                </div>
+              </div>
+
+              <AnimatePresence mode="wait">
+                <motion.p
+                  key={statusLabel}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-sm sm:text-base font-semibold text-white"
+                >
+                  {statusLabel}
+                </motion.p>
+              </AnimatePresence>
+
+              <p className="mt-2 text-[11px] sm:text-xs text-white/45">
+                Please wait a moment
+              </p>
+
+              <div className="mt-6 h-1 w-28 overflow-hidden rounded-full bg-white/10">
+                <motion.div
+                  className="h-full rounded-full bg-accent"
+                  initial={{ x: "-100%" }}
+                  animate={{ x: "100%" }}
+                  transition={{ repeat: Infinity, duration: 1.1, ease: "easeInOut" }}
+                  style={{ width: "55%" }}
+                />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="login-form"
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.45 }}
+              className="relative z-10 w-full max-w-sm"
+            >
 
           {/* Mobile logo */}
           <div className="flex flex-col items-center mb-5 sm:mb-8 lg:hidden">
@@ -448,9 +486,11 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3.5 bg-white/[0.04] border border-white/10 rounded-lg sm:rounded-xl text-xs sm:text-sm text-white
-                    placeholder-gray-700 focus:outline-none focus:border-accent/60 focus:bg-white/[0.07]
-                    transition-all duration-200"
+                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3.5 bg-black border border-white/10 rounded-lg sm:rounded-xl text-xs sm:text-sm text-white
+                    placeholder-gray-600 focus:outline-none focus:border-accent/60 focus:bg-black
+                    transition-all duration-200
+                    [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#000] [&:-webkit-autofill]:[-webkit-text-fill-color:#fff]
+                    [&:-webkit-autofill]:[caret-color:#fff]"
                 />
                 {/* focus glow */}
                 <div className="absolute -inset-px rounded-xl opacity-0 group-focus-within:opacity-100 transition duration-200 pointer-events-none"
@@ -471,9 +511,12 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3.5 pr-10 sm:pr-12 bg-white/[0.04] border border-white/10 rounded-lg sm:rounded-xl text-xs sm:text-sm text-white
-                    placeholder-gray-700 focus:outline-none focus:border-accent/60 focus:bg-white/[0.07]
-                    transition-all duration-200"
+                  autoComplete="current-password"
+                  className="w-full px-3 py-2.5 sm:px-4 sm:py-3.5 pr-11 sm:pr-12 bg-black border border-white/10 rounded-lg sm:rounded-xl text-xs sm:text-sm text-white
+                    placeholder-gray-600 focus:outline-none focus:border-accent/60 focus:bg-black
+                    transition-all duration-200
+                    [&:-webkit-autofill]:shadow-[inset_0_0_0_1000px_#000] [&:-webkit-autofill]:[-webkit-text-fill-color:#fff]
+                    [&:-webkit-autofill]:[caret-color:#fff]"
                 />
                 <div className="absolute -inset-px rounded-xl opacity-0 group-focus-within:opacity-100 transition duration-200 pointer-events-none"
                   style={{ boxShadow: "0 0 0 1px rgba(var(--color-accent-rgb), 0.3), 0 0 16px rgba(var(--color-accent-rgb), 0.08)" }}
@@ -481,9 +524,11 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-accent transition z-10"
+                  className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-white/75 hover:text-accent hover:bg-white/5 transition"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
@@ -501,20 +546,10 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
                 }`}
               style={!loading ? { boxShadow: "0 0 28px rgba(var(--color-accent-rgb), 0.35)" } : {}}
             >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  Sign In
-                  <ArrowRight size={15} />
-                </>
-              )}
+              <>
+                Sign In
+                <ArrowRight size={15} />
+              </>
             </motion.button>
 
             <div className="flex justify-end mt-2 sm:mt-3">
@@ -546,7 +581,9 @@ function Login({ setLoadingLoginLoader, loadingLoginLoader }) {
             </p>
           </div>
 
-        </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
     </div>

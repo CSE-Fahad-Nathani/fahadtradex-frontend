@@ -275,8 +275,8 @@ function Portfolio() {
               <div
                 key={i}
                 onClick={() => navigate(`/stock/${item.Exch}/${item.ExchType}/${item.ScripCode}/${item.symbol}?avgPrice=${item.avgPrice || 0}&qty=${item.totalQty || 0}&invested=${item.investedValue || 0}&lotSize=${item.lotSize || 0}`)}
-                className="rounded-xl border border-borderColor/60 bg-black active:bg-[#0a0a0a] cursor-pointer overflow-hidden"
-                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.2)", margin:"10px" }}
+                className="rounded-xl border border-borderColor/60 bg-cardBg active:bg-[var(--color-row-hover)] cursor-pointer overflow-hidden"
+                style={{ boxShadow: isLight ? "0 1px 3px rgba(0,0,0,0.08)" : "0 1px 3px rgba(0,0,0,0.2)", margin:"10px" }}
               >
                 <div className="px-3.5 pt-3 pb-2.5">
                   {/* Header: Name + P&L */}
@@ -344,7 +344,7 @@ function Portfolio() {
       </div>
 
       {/* ── Desktop Table ── */}
-      <div className="hidden sm:block rounded-[20px] border border-borderColor overflow-hidden bg-black overflow-x-auto">
+      <div className="hidden sm:block rounded-[20px] border border-borderColor overflow-hidden bg-cardBg overflow-x-auto">
         <div className="min-w-[900px]">
 
           <div className="grid px-5 py-3 border-b border-borderColor text-center bg-[var(--color-surface-subtle)]" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1.3fr 1.2fr" }}>
@@ -363,11 +363,11 @@ function Portfolio() {
             ))}
           </div>
 
-          <div style={{ maxHeight: "40vh", overflow: "auto" }} className="bg-black">
+          <div style={{ maxHeight: "40vh", overflow: "auto" }} className="bg-cardBg">
             {loading && (
               <div className="animate-pulse">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="grid px-5 py-4 border-b border-borderColor bg-black" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1.3fr 1.2fr" }}>
+                  <div key={i} className="grid px-5 py-4 border-b border-borderColor bg-cardBg" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1.3fr 1.2fr" }}>
                     <div className="space-y-2"><div className="h-3 w-32 bg-borderColor rounded" /><div className="h-2 w-20 bg-borderColor rounded" /></div>
                     {[...Array(5)].map((__, j) => (<div key={j} className="flex flex-col items-center gap-2"><div className="h-3 w-16 bg-borderColor rounded" /><div className="h-2 w-12 bg-borderColor rounded" /></div>))}
                   </div>
@@ -389,7 +389,7 @@ function Portfolio() {
               const exchLabel = item.Exch === "B" ? "BSE" : item.Exch === "N" ? "NSE" : "MCX";
 
               return (
-                <div key={i} onClick={() => navigate(`/stock/${item.Exch}/${item.ExchType}/${item.ScripCode}/${item.symbol}?avgPrice=${item.avgPrice || 0}&qty=${item.totalQty || 0}&invested=${item.investedValue || 0}&lotSize=${item.lotSize || 0}`)} className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 bg-black hover:bg-[#0a0a0a] cursor-pointer" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1.3fr 1.2fr" }}>
+                <div key={i} onClick={() => navigate(`/stock/${item.Exch}/${item.ExchType}/${item.ScripCode}/${item.symbol}?avgPrice=${item.avgPrice || 0}&qty=${item.totalQty || 0}&invested=${item.investedValue || 0}&lotSize=${item.lotSize || 0}`)} className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 bg-cardBg hover:bg-[var(--color-row-hover)] cursor-pointer" style={{ gridTemplateColumns: "2fr 1.2fr 1fr 1fr 1.3fr 1.2fr" }}>
                   <div className="text-left">
                     <p className="text-[13px] font-semibold tracking-tight text-textPrimary" style={{ fontFamily: "'Syne', sans-serif" }}>{item.name}</p>
                     <div className="flex items-center gap-1.5 mt-1"><span className="text-[9px] font-semibold tracking-[0.5px] rounded px-1.5 py-0.5" style={{ background: "rgba(124,111,255,0.12)", color: "#7c6fff" }}>{exchLabel}</span><span className={`text-[10px] ${labelClass}`}>{item.symbol}</span></div>

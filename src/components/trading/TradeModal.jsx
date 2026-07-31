@@ -6,7 +6,7 @@ import { fetchUserData } from "../../services/user.service";
 import { formatNumber } from "../../utils/formatNumber";
 import { useUserStore } from "../../store/userStore";
 import { motion } from "framer-motion";
-import { X, Minus, Plus } from "lucide-react";
+import { X, Minus, Plus, ArrowRight, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useThemeStore } from "../../store/themeStore";
 
@@ -64,11 +64,7 @@ const TradeModal = ({
       ? "bg-red-600 hover:bg-red-700 text-white border-red-600"
       : "bg-red-500 hover:bg-red-400 text-white border-red-500";
 
-  const confirmPanelClass = isBuy
-    ? isLight ? "bg-green-50 border-green-500/30" : "bg-green-500/10 border-green-500/25"
-    : isLight ? "bg-red-50 border-red-500/30" : "bg-red-500/10 border-red-500/25";
-
-  const confirmTextClass = isBuy
+  const confirmAccentClass = isBuy
     ? isLight ? "text-green-700" : "text-green-400"
     : isLight ? "text-red-700" : "text-red-400";
 
@@ -98,7 +94,9 @@ const TradeModal = ({
     total = Number((quantity * price).toFixed(2));
   }
 
-  const insufficientBalance = isBuy && (user?.balance ?? Infinity) < total;
+  const balanceNow = user?.balance || 0;
+  const balanceAfter = isBuy ? balanceNow - total : balanceNow + total;
+  const insufficientBalance = isBuy && balanceNow < total;
   const maxQty = isMCX ? lots : totalQty;
   const canSubmit = price > 0 && quantity > 0 && !insufficientBalance;
 
@@ -192,11 +190,12 @@ const TradeModal = ({
   const exchangeLabel = exchange === "M" ? "MCX" : exchange === "N" ? "NSE" : "BSE";
   const totalLabel = isMCX ? (isBuy ? "Margin" : "Receive") : isBuy ? "Total" : "Receive";
   const qtyLabel = isMCX ? "Lots" : "Qty";
+  const payLabel = isBuy ? (isMCX ? "Margin required" : "You pay") : "You receive";
 
   const totalValueClass = insufficientBalance
     ? profitClass(false)
     : isBuy
-      ? confirmTextClass
+      ? confirmAccentClass
       : profitClass(true);
 
   const SummaryRow = ({ label, value, valueClassName = "text-textPrimary", bold }) => (
@@ -330,7 +329,7 @@ const TradeModal = ({
                 )}
                 <SummaryRow
                   label="Balance"
-                  value={`₹ ${formatNumber(user?.balance?.toFixed(2))}`}
+                  value={`₹ ${formatNumber(balanceNow.toFixed(2))}`}
                   valueClassName={insufficientBalance ? profitClass(false) : profitClass(true)}
                 />
                 {insufficientBalance && (
@@ -360,31 +359,82 @@ const TradeModal = ({
 
           {step === "PREVIEW" && (
             <>
-              <div className={`rounded-lg border px-3 py-2.5 mb-3 text-center ${confirmPanelClass}`}>
-                <p className={`text-xs font-semibold ${confirmTextClass}`}>
-                  Confirm {isBuy ? "Buy" : "Sell"} · {formatNumber(quantity)} {isMCX ? "lots" : "qty"} @ ₹{formatNumber(price)}
-                </p>
-                <p className={`text-lg font-bold mt-1 ${confirmTextClass}`} style={mono}>
-                  ₹ {formatNumber(total)}
-                </p>
-                <p className="text-[10px] mt-1 text-textSubtle">
-                  Balance after: ₹{" "}
-                  {formatNumber(
-                    (isBuy ? (user?.balance || 0) - total : (user?.balance || 0) + total).toFixed(2)
-                  )}
-                </p>
-              </div>
+              <div className={`${panelClass} px-3.5 py-3 mb-3`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck size={13} className={confirmAccentClass} />
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-textSubtle">
+                      Order review
+                    </span>
+                  </div>
+                  <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${actionBadgeClass}`}>
+                    {isBuy ? "Buy" : "Sell"}
+                  </span>
+                </div>
 
-              <div className={`${panelClass} px-3 py-2 mb-3`}>
-                <SummaryRow label="Symbol" value={symbol} />
-                <SummaryRow label="Exchange" value={exchangeLabel} />
-                {isMCX && (
-                  <SummaryRow label="Contract" value={`₹ ${formatNumber(contractValue.toFixed(2))}`} />
-                )}
+                <div className="space-y-0.5">
+                  <SummaryRow
+                    label="Side"
+                    value={isBuy ? "BUY" : "SELL"}
+                    valueClassName={confirmAccentClass}
+                    bold
+                  />
+                  <SummaryRow
+                    label={qtyLabel}
+                    value={`${formatNumber(quantity)} × ₹${formatNumber(price)}`}
+                  />
+                  <SummaryRow label="Exchange" value={exchangeLabel} />
+                  {isMCX && (
+                    <SummaryRow label="Contract value" value={`₹ ${formatNumber(contractValue.toFixed(2))}`} />
+                  )}
+                  {isMCX && action === "SELL" && (
+                    <SummaryRow
+                      label="Est. P&L"
+                      value={`${pnl >= 0 ? "+" : ""}₹ ${formatNumber(pnl.toFixed(2))}`}
+                      valueClassName={profitClass(pnl >= 0)}
+                      bold
+                    />
+                  )}
+                </div>
+
+                <div className="border-t border-dashed border-borderColor my-3" />
+
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <span className="text-xs font-semibold text-textPrimary">{payLabel}</span>
+                  <span className={`text-lg font-bold leading-none ${confirmAccentClass}`} style={mono}>
+                    ₹{formatNumber(total)}
+                  </span>
+                </div>
+
+                <div
+                  className="rounded-lg border border-borderColor px-3 py-2.5"
+                  style={{ background: "var(--color-surface-subtle)" }}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[9px] text-textSubtle mb-0.5">Before</p>
+                      <p className="text-xs font-semibold text-textPrimary truncate" style={mono}>
+                        ₹{formatNumber(balanceNow.toFixed(2))}
+                      </p>
+                    </div>
+                    <ArrowRight size={12} className="shrink-0 text-textSubtle opacity-60" />
+                    <div className="flex-1 min-w-0 text-right">
+                      <p className="text-[9px] text-textSubtle mb-0.5">After</p>
+                      <p className={`text-xs font-semibold truncate ${confirmAccentClass}`} style={mono}>
+                        ₹{formatNumber(balanceAfter.toFixed(2))}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-2">
-                <button type="button" onClick={() => setStep("FORM")} className={`flex-1 h-10 text-xs font-semibold rounded-lg ${ghostBtnClass}`}>
+                <button
+                  type="button"
+                  onClick={() => setStep("FORM")}
+                  disabled={loading}
+                  className={`flex-1 h-10 text-xs font-semibold rounded-lg ${ghostBtnClass}`}
+                >
                   Back
                 </button>
                 <button

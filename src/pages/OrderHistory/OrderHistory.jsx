@@ -160,7 +160,7 @@ function OrderHistory() {
               const exchLabel = item.Exch === "B" ? "BSE" : item.Exch === "N" ? "NSE" : "MCX";
 
               return (
-                <div key={i} className="border-b border-borderColor px-3 pt-2 pb-1.5 bg-black">
+                <div key={i} className="border-b border-borderColor px-3 pt-2 pb-1.5 bg-cardBg">
                   {/* Row 1: Name + badges */}
                   <div className="flex items-start justify-between mb-1.5">
                     <div className="min-w-0 flex-1 mr-2">
@@ -228,7 +228,7 @@ function OrderHistory() {
           </div>
 
           {/* ── Desktop Table ── */}
-          <div className="hidden sm:block overflow-x-auto bg-black">
+          <div className="hidden sm:block overflow-x-auto bg-cardBg">
             <div className="min-w-[900px]">
               <div className={`grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] px-4 py-3 text-xs border-b border-borderColor text-center bg-[var(--color-surface-subtle)] ${labelClass}`}>
                 <span className="text-left">Name</span>
@@ -239,13 +239,13 @@ function OrderHistory() {
                 <span><div>Reason</div><div className={`text-[10px] ${labelClass}`}>Message</div></span>
               </div>
 
-              <div className="bg-black">
+              <div className="bg-cardBg">
                 {ordersList.map((item, i) => {
                   const isBuy = item.type === "BUY";
                   const isSuccess = item.status === "SUCCESS";
 
                   return (
-                    <div key={i} className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] px-4 py-3 border-b border-borderColor items-center text-center bg-black hover:bg-[#0a0a0a] transition-colors">
+                    <div key={i} className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr] px-4 py-3 border-b border-borderColor items-center text-center bg-cardBg hover:bg-[var(--color-row-hover)] transition-colors">
                       <div className="text-left">
                         <p className="text-sm font-medium text-textPrimary">{item.name}</p>
                         <p className={`text-xs ${labelClass}`}>{item.symbol} • {item.Exch === "B" ? "BSE" : item.Exch === "N" ? "NSE" : "MCX"}</p>

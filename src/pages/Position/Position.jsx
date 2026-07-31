@@ -304,8 +304,8 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
             <div
               key={i}
               onClick={() => navigate(`/stock/${item.Exch}/${item.ExchType}/${item.ScripCode}/${item.symbol}`)}
-              className="rounded-xl border border-borderColor overflow-hidden cursor-pointer active:scale-[0.99] transition-transform bg-black"
-              style={{ background: "#000000", borderColor: mobileBorderSubtle, margin: "3px 10px" }}
+              className="rounded-xl border border-borderColor overflow-hidden cursor-pointer active:scale-[0.99] transition-transform bg-cardBg"
+              style={{ background: mobileCardBg || "var(--color-card-bg)", borderColor: mobileBorderSubtle, margin: "3px 10px" }}
             >
               {/* Top accent */}
               <div className="h-[1px]" style={{ background: `linear-gradient(90deg, transparent, ${profitColor(isProfit)}40, transparent)` }} />
@@ -376,7 +376,7 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
       </div>
 
       {/* ── Desktop Table ── */}
-      <div className="hidden sm:block rounded-[20px] border border-borderColor overflow-hidden bg-black overflow-x-auto">
+      <div className="hidden sm:block rounded-[20px] border border-borderColor overflow-hidden bg-cardBg overflow-x-auto">
         <div className="min-w-[900px]">
 
           <div
@@ -405,11 +405,11 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
             ))}
           </div>
 
-          <div style={{ maxHeight: "45vh", overflow: "auto" }} className="bg-black">
+          <div style={{ maxHeight: "45vh", overflow: "auto" }} className="bg-cardBg">
             {loading && (
               <div className="animate-pulse">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="grid px-5 py-4 border-b border-borderColor bg-black" style={{ gridTemplateColumns: "2fr 1.1fr 0.9fr 1fr 1.2fr 1.2fr" }}>
+                  <div key={i} className="grid px-5 py-4 border-b border-borderColor bg-cardBg" style={{ gridTemplateColumns: "2fr 1.1fr 0.9fr 1fr 1.2fr 1.2fr" }}>
                     <div className="space-y-2">
                       <div className="h-3 w-32 bg-borderColor rounded" />
                       <div className="h-2 w-20 bg-borderColor rounded" />
@@ -447,7 +447,7 @@ function Position({ triggerPositionUpdate, setTriggerPositionUpdate }) {
                 <div
                   key={i}
                   onClick={() => navigate(`/stock/${item.Exch}/${item.ExchType}/${item.ScripCode}/${item.symbol}`)}
-                  className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 bg-black hover:bg-[#0a0a0a] cursor-pointer"
+                  className="relative group grid px-5 py-4 border-b border-borderColor items-center text-center transition-all duration-150 bg-cardBg hover:bg-[var(--color-row-hover)] cursor-pointer"
                   style={{ gridTemplateColumns: "2fr 1.1fr 0.9fr 1fr 1.2fr 1.2fr" }}
                 >
                   <div className="text-left">
