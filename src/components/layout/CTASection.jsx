@@ -6,9 +6,14 @@ import {
   ShieldCheck,
   Cpu,
   Zap,
+  CreditCard,
 } from "lucide-react";
 
 const features = [
+  {
+    icon: CreditCard,
+    text: "Razorpay Payment Integration",
+  },
   {
     icon: TrendingUp,
     text: "Real-Time Market Data",

@@ -1,8 +1,14 @@
 import { motion } from "framer-motion";
-import { TrendingUp, BarChart3, Wallet, Cpu, Database, Zap, Search, LayoutDashboard } from "lucide-react";
+import { TrendingUp, BarChart3, Wallet, Cpu, Database, Zap, Search, LayoutDashboard, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const features = [
+  {
+    icon: CreditCard,
+    title: "Razorpay Payments",
+    description:
+      "Full payment gateway integration — create order, Checkout.js popup, HMAC signature verify, then credit virtual funds to the user wallet.",
+  },
   {
     icon: TrendingUp,
     title: "Paper Trading Engine",

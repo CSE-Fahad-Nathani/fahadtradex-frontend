@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp, BarChart3, Wallet, Search, Cpu, Database,
   Globe, ShieldCheck, Layers, BookOpen, ChevronDown, ArrowLeft,
-  Zap, RefreshCw, LayoutDashboard, FileText, AlertCircle
+  Zap, RefreshCw, LayoutDashboard, FileText, AlertCircle, CreditCard
 } from "lucide-react";
 import logo from "../../assets/images/FahadTradeX.png";
 
@@ -20,7 +20,9 @@ const sections = [
           FahadTradeX is a full-stack real-time paper trading platform built to simulate a
           production-grade brokerage environment. Users receive <span className="text-white font-semibold">₹10,00,000</span> in
           virtual capital and can trade NSE, BSE, and MCX instruments using live market data
-          powered by the 5Paisa API.
+          powered by the 5Paisa API. The platform also includes a complete{" "}
+          <span className="text-white font-semibold">Razorpay payment integration</span> so users
+          can top up additional virtual funds whenever they need more margin.
         </p>
         <p>
           The architecture is modular and scalable — following a{" "}
@@ -33,13 +35,95 @@ const sections = [
             { label: "Virtual Capital", value: "₹10,00,000" },
             { label: "Scrip Records", value: "50,000+" },
             { label: "Exchanges", value: "NSE / BSE / MCX" },
-            { label: "Order States", value: "6 Types" },
+            { label: "Payments", value: "Razorpay" },
           ].map((stat) => (
             <div key={stat.label} className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
               <p className="text-accent text-xl font-bold">{stat.value}</p>
               <p className="text-gray-400 text-sm mt-1">{stat.label}</p>
             </div>
           ))}
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: "payments",
+    icon: CreditCard,
+    title: "Razorpay Payment & Fund Top-Up",
+    color: "text-emerald-400",
+    content: (
+      <div className="space-y-5 text-gray-300 leading-relaxed">
+        <p>
+          FahadTradeX includes a production-style{" "}
+          <strong className="text-white">payment gateway integration using Razorpay</strong>.
+          When a user needs more virtual trading margin, they can pay a small real amount
+          and receive a larger virtual credit instantly after successful payment verification.
+        </p>
+
+        <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-5">
+          <h4 className="text-emerald-400 font-semibold mb-3 flex items-center gap-2">
+            <Wallet size={16} /> How Add Funds Works
+          </h4>
+          <ol className="space-y-2 text-sm text-gray-300 list-decimal list-inside">
+            <li>User clicks <strong className="text-white">Add Money</strong> next to Available Margin in the header</li>
+            <li>A package modal opens with clear pay-vs-credit options</li>
+            <li>Razorpay Checkout opens for secure online payment</li>
+            <li>Backend verifies the payment signature before updating balance</li>
+            <li>Virtual margin is credited and Available Margin refreshes immediately</li>
+          </ol>
+        </div>
+
+        <div>
+          <h4 className="text-white font-semibold mb-3">Top-Up Packages</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { pay: "₹10", credit: "₹2,00,000", label: "Starter" },
+              { pay: "₹20", credit: "₹4,50,000", label: "Growth" },
+              { pay: "₹50", credit: "₹10,00,000", label: "Pro" },
+              { pay: "₹100", credit: "₹25,00,000", label: "Elite" },
+            ].map((pack) => (
+              <div key={pack.label} className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">{pack.label}</p>
+                <p className="text-accent text-lg font-bold">{pack.pay}</p>
+                <p className="text-gray-400 text-xs mt-1">→ {pack.credit} virtual</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <ShieldCheck size={16} className="text-emerald-400" /> Security Highlights
+            </h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li>Secret keys stay only on the server</li>
+              <li>Orders are created server-side before checkout</li>
+              <li>Payment signature verified with HMAC SHA256</li>
+              <li>Balance is credited only after successful verification</li>
+              <li>Failed or cancelled payments never unlock funds</li>
+            </ul>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+            <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+              <RefreshCw size={16} className="text-emerald-400" /> What Gets Saved
+            </h4>
+            <ul className="space-y-2 text-sm text-gray-300">
+              <li>Full payment record stored in Firebase</li>
+              <li>Package details, amount paid, and credit amount</li>
+              <li>Payment status and purchase timestamp</li>
+              <li>User balance updated after successful top-up</li>
+              <li>Unlimited top-ups supported for demo usage</li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="bg-accent/5 border border-accent/20 rounded-xl px-5 py-4">
+          <p className="text-sm text-gray-300">
+            <span className="text-accent font-semibold">Why this matters:</span>{" "}
+            This feature demonstrates real-world payment gateway skills — checkout flow,
+            secure verification, wallet credit, and UI refresh — beyond paper trading alone.
+          </p>
         </div>
       </div>
     ),
@@ -599,8 +683,8 @@ function Documentation() {
                 <span className="text-accent">FahadTradeX</span>
               </h1>
               <p className="text-gray-400 text-sm sm:text-base md:text-lg max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                A complete reference for the trading engine, real-time infrastructure, AI systems,
-                database architecture, and UI design powering the platform.
+                A complete reference for the trading engine, Razorpay payment top-ups, real-time
+                infrastructure, AI systems, database architecture, and UI design powering the platform.
               </p>
             </motion.div>
           </div>

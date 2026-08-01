@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import stockVideo from "../../assets/videos/stock-bg.webm";
 import { motion } from "framer-motion";
 import ReactPlayer from "react-player";
-import { TrendingUp, Zap, Cpu, ShieldCheck } from "lucide-react";
+import { TrendingUp, Zap, Cpu, ShieldCheck, CreditCard } from "lucide-react";
 
 /* Animation Variants */
 
@@ -35,6 +35,7 @@ const pills = [
   { icon: TrendingUp, label: "Live BUY / SELL Engine" },
   { icon: Zap, label: "WebSocket Market Feed" },
   { icon: Cpu, label: "AI Stock Analysis" },
+  { icon: CreditCard, label: "Razorpay Payment Gateway" },
   { icon: ShieldCheck, label: "JWT-Secured Trading" },
 ];
 
@@ -101,7 +102,8 @@ function HeroSection() {
           className="mt-2 sm:mt-6 text-gray-300 text-[10px] sm:text-lg max-w-xl leading-relaxed"
         >
           FahadTradeX gives you ₹10,00,000 in virtual capital to trade NSE, BSE, and MCX
-          instruments using live market data powered by 5Paisa.
+          instruments using live market data — with Razorpay payment integration to top up
+          more funds anytime.
         </motion.p>
 
         {/* Buttons */}
