@@ -351,7 +351,7 @@ function Dashboard() {
             )}
           </div>
           <div className="rounded-lg sm:rounded-xl border border-borderColor bg-black/30 backdrop-blur-md px-3 py-2.5 sm:px-5 sm:py-4 min-w-0 sm:min-w-[220px]">
-            <p className="text-[9px] sm:text-xs text-gray-400">Market Pulse</p>
+            <p className="text-[9px] sm:text-xs text-gray-400">Your Momentum</p>
             {chartLoading || statsLoading ? (
               <div className="mt-1.5 space-y-2 animate-pulse">
                 <div className="h-4 sm:h-5 w-28 bg-borderColor rounded" />
@@ -368,7 +368,7 @@ function Dashboard() {
                       : "text-gray-300"
                   }`}
                 >
-                  {trend === "up" ? "▲ Trending Up" : trend === "down" ? "▼ Trending Down" : "— Stable"}
+                  {trend === "up" ? "▲ Gain" : trend === "down" ? "▼ Loss" : "— Even"}
                 </p>
                 <p className="text-[9px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">Holdings: {stats.holdings}</p>
               </>

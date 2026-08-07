@@ -139,7 +139,7 @@ function Sidebar() {
           <>
             <div className="fixed inset-0 z-40" onClick={() => setShowMoreMenu(false)} />
             <div
-              className="absolute bottom-full left-0 right-0 z-50 border-t border-borderColor bg-primaryBg/95 backdrop-blur-xl px-3 py-2 flex flex-col gap-0.5"
+              className="absolute bottom-full left-0 right-0 z-50 border-t border-borderColor bg-primaryBg px-3 py-2 flex flex-col gap-0.5 shadow-[0_-8px_24px_rgba(0,0,0,0.35)]"
             >
               {mobileMoreTabs.map((item) => {
                 const Icon = item.icon;

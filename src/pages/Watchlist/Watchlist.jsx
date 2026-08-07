@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "../../components/common/Toast/ToastContext";
 import useMarketFeed from "../../hooks/useMarketFeed";
 import { FiEye, FiTrash2 } from "react-icons/fi";
@@ -389,7 +389,7 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
   
       {/* ── Mobile Card Layout ── */}
            <div className="sm:hidden overflow-hidden">
-        <div style={{ maxHeight: "75vh", overflow: "auto" }} className="space-y-2 px-0.5">
+        <div style={{ maxHeight: "75vh", overflow: "auto", paddingBottom: "13vh"}} className="space-y-2 px-0.5">
           {loading && (
             <div className="animate-pulse space-y-2">
               {[...Array(5)].map((_, i) => (
@@ -556,46 +556,80 @@ function Watchlist({ triggerWatchlistUpdate, setTriggerWatchlistUpdate }) {
           )}
 
           {!loading && filteredData.length > 0 && (
-            <div className="flex flex-col gap-2 pt-2 pb-1 px-0.5">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[9px] text-textSubtle">
-                  {filteredData.length === 0
-                    ? "0 results"
-                    : `${(currentPage - 1) * pageSize + 1}–${Math.min(currentPage * pageSize, filteredData.length)} of ${filteredData.length}`}
-                </span>
-                <div className="flex items-center gap-1">
-                  <button
-                    disabled={currentPage <= 1}
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    className="px-2 py-1 text-[9px] rounded-md border border-borderColor text-textMuted disabled:opacity-40 hover:text-textPrimary hover:bg-[var(--color-row-hover)] transition-colors"
-                  >
-                    Prev
-                  </button>
-                  <span className="text-[9px] px-1 text-textSubtle">{currentPage}/{totalPages}</span>
-                  <button
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    className="px-2 py-1 text-[9px] rounded-md border border-borderColor text-textMuted disabled:opacity-40 hover:text-textPrimary hover:bg-[var(--color-row-hover)] transition-colors"
-                  >
-                    Next
-                  </button>
-                </div>
+            <div
+              className="rounded-xl border border-borderColor bg-cardBg overflow-hidden"
+              style={mobileStatsPanelStyle}
+            >
+              <div className="px-3.5 pt-3 pb-2 text-center">
+                <p className="text-[11px] text-textMuted">
+                  Showing{" "}
+                  <span className="font-semibold text-textPrimary tabular-nums">
+                    {(currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredData.length)}
+                  </span>
+                  {" "}of{" "}
+                  <span className="font-semibold text-textPrimary tabular-nums">
+                    {filteredData.length}
+                  </span>
+                </p>
               </div>
-              <div className="flex flex-wrap gap-1">
-                {PAGE_SIZES.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => setPageSize(size)}
-                    className="px-2 py-0.5 text-[9px] rounded-md border transition-colors"
-                    style={
-                      pageSize === size
-                        ? { background: "rgba(124,111,255,0.15)", color: "#7c6fff", border: "1px solid rgba(124,111,255,0.3)" }
-                        : pageSizeInactiveStyle
-                    }
-                  >
-                    {size}
-                  </button>
-                ))}
+
+              <div className="flex items-center gap-2 px-3 pb-3">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="flex-1 inline-flex items-center justify-center gap-1 h-10 rounded-lg border border-borderColor text-xs font-semibold text-textPrimary disabled:opacity-35 disabled:pointer-events-none active:bg-[var(--color-row-hover)] transition-colors"
+                >
+                  <ChevronLeft size={14} />
+                  Prev
+                </button>
+                <div className="min-w-[4.5rem] h-10 px-2 rounded-lg border border-borderColor bg-[var(--color-surface-subtle)] flex flex-col items-center justify-center">
+                  <span className="text-[10px] font-bold text-textPrimary tabular-nums leading-none">
+                    {currentPage}
+                  </span>
+                  <span className="text-[9px] text-textMuted mt-0.5 leading-none">
+                    of {totalPages}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="flex-1 inline-flex items-center justify-center gap-1 h-10 rounded-lg border border-borderColor text-xs font-semibold text-textPrimary disabled:opacity-35 disabled:pointer-events-none active:bg-[var(--color-row-hover)] transition-colors"
+                >
+                  Next
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+
+              <div className="px-3 pb-3 pt-1 border-t border-borderColor">
+                <p className="text-[10px] text-textMuted mb-2 text-center tracking-wide uppercase">
+                  Rows per page
+                </p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {PAGE_SIZES.map((size) => {
+                    const active = pageSize === size;
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => setPageSize(size)}
+                        className="h-8 rounded-lg text-[11px] font-semibold tabular-nums transition-colors"
+                        style={
+                          active
+                            ? {
+                                background: "rgba(124,111,255,0.18)",
+                                color: "#7c6fff",
+                                border: "1px solid rgba(124,111,255,0.35)",
+                              }
+                            : pageSizeInactiveStyle
+                        }
+                      >
+                        {size}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}

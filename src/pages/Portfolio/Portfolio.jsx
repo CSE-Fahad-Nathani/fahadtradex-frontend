@@ -246,7 +246,7 @@ function Portfolio() {
           </div>
         )}
 
-        <div style={{ maxHeight: "65vh", overflow: "auto", }} className="space-y-2">
+        <div style={{ maxHeight: "65vh", overflow: "auto", paddingBottom: "23vh"}} className="space-y-2">
           {loading && (
             <div className="animate-pulse space-y-2">
               {[...Array(5)].map((_, i) => (

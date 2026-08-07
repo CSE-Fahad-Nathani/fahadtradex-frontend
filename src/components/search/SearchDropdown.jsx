@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { useToast } from "../../components/common/Toast/ToastContext";
 import useMarketFeed from "../../hooks/useMarketFeed";
@@ -18,6 +18,20 @@ function SearchDropdown({ query,  triggerWatchlistUpdate, setTriggerWatchlistUpd
   const [tradeAction, setTradeAction] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const liveData = useMarketStore((s) => s.data);
+
+  const sortedData = useMemo(() => {
+    const hasLivePrice = (item) => {
+      const live = liveData[String(item.scripCode)];
+      const rate = Number(live?.LastRate);
+      return Number.isFinite(rate) && rate !== 0;
+    };
+
+    return [...data].sort((a, b) => {
+      const aLive = hasLivePrice(a) ? 0 : 1;
+      const bLive = hasLivePrice(b) ? 0 : 1;
+      return aLive - bLive;
+    });
+  }, [data, liveData]);
 
 const scrips =
   data.length > 0
@@ -140,15 +154,17 @@ useMarketFeed({
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="absolute top-9 sm:top-12 left-0 w-full bg-cardBg border border-borderColor rounded-lg sm:rounded-xl overflow-hidden z-50 shadow-xl"
+      className="absolute top-full mt-1.5 z-50 bg-cardBg border border-borderColor shadow-xl overflow-hidden
+        -left-3 -right-3 w-auto rounded-b-xl border-x-0
+        sm:left-0 sm:right-0 sm:w-full sm:rounded-xl sm:border-x"
     >
       {/* Tabs */}
-      <div className="flex gap-1 sm:gap-2 p-2 sm:p-3 border-b border-borderColor">
+      <div className="flex gap-1.5 sm:gap-2 p-2.5 sm:p-3 border-b border-borderColor overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-2 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-xs rounded-md transition ${
+            className={`px-3 sm:px-3 py-1 sm:py-1 text-xs rounded-md transition shrink-0 ${
               activeTab === tab
                 ? "bg-accent text-black"
                 : "text-textMuted hover:text-textPrimary"
@@ -167,16 +183,16 @@ useMarketFeed({
       </div>
 
       {/* Rows */}
-      <div className="max-h-64 sm:max-h-80 overflow-y-auto">
+      <div className="max-h-[60vh] sm:max-h-80 overflow-y-auto">
         {loading && (
-          <div className="p-3 sm:p-4 text-xs sm:text-sm text-gray-400">Searching...</div>
+          <div className="p-4 text-sm text-gray-400">Searching...</div>
         )}
 
         {!loading && query?.length >= 3 && data.length === 0 && (
-          <div className="p-3 sm:p-4 text-xs sm:text-sm text-gray-400">No results found</div>
+          <div className="p-4 text-sm text-gray-400">No results found</div>
         )}
 
-        {data.map((item) => {
+        {sortedData.map((item) => {
           const token = String(item.scripCode);
           const live = liveData[token];
           const isUp = live && live.LastRate > live.PClose;
@@ -184,47 +200,99 @@ useMarketFeed({
 
           return (
             <div key={item.id} className="border-b border-borderColor">
-              {/* ── Mobile Row ── */}
-              <div className="sm:hidden px-2.5 py-2">
-                <div className="flex items-start justify-between mb-1">
-                  <div className="min-w-0 flex-1 mr-2">
-                    <p className="text-[11px] font-semibold truncate" style={{ color: "#f0f2f8" }}>{item.name}</p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <span className="text-[7px] font-semibold px-1 py-px rounded" style={{ background: "rgba(124,111,255,0.12)", color: "#7c6fff" }}>{exchLabel}</span>
-                      <span className="text-[7px] truncate" style={{ color: "#5a5f78" }}>{item.symbol}</span>
+              {/* Mobile Row */}
+              <div className="sm:hidden px-3.5 py-3">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-textPrimary leading-snug break-words">
+                      {item.name}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span
+                        className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                        style={{ background: "rgba(124,111,255,0.12)", color: "#7c6fff" }}
+                      >
+                        {exchLabel}
+                      </span>
+                      <span className="text-[11px] text-textMuted truncate">{item.symbol}</span>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[10px] font-semibold" style={{ fontFamily: "'IBM Plex Mono', monospace", color: isUp ? "#22d38a" : "#ff4d6a" }}>
+                    <p
+                      className="text-sm font-semibold tabular-nums"
+                      style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        color: isUp ? "#22d38a" : "#ff4d6a",
+                      }}
+                    >
                       ₹{live ? formatNumber(live.LastRate) : "—"}
                     </p>
-                    <p className="text-[8px]" style={{ fontFamily: "'IBM Plex Mono', monospace", color: isUp ? "#22d38a" : "#ff4d6a" }}>
-                      {live ? `${isUp ? "+" : ""}${(live.LastRate - live.PClose).toFixed(2)} (${live.ChgPcnt.toFixed(2)}%)` : "—"}
+                    <p
+                      className="text-[11px] tabular-nums mt-0.5"
+                      style={{
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        color: isUp ? "#22d38a" : "#ff4d6a",
+                      }}
+                    >
+                      {live
+                        ? `${isUp ? "+" : ""}${(live.LastRate - live.PClose).toFixed(2)} (${live.ChgPcnt.toFixed(2)}%)`
+                        : "—"}
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-1.5 mt-1">
+                <div className="flex gap-2">
                   <button
-                    onClick={() => { setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }}
-                    className="px-2 py-0.5 text-[8px] font-semibold rounded-md" style={{ border: "1px solid rgba(34,211,138,0.3)", background: "rgba(34,211,138,0.07)", color: "#22d38a" }}
-                  >BUY</button>
+                    onClick={() => {
+                      setSelectedStock(item);
+                      setTradeAction("BUY");
+                      setIsModalOpen(true);
+                    }}
+                    className="flex-1 py-1.5 text-xs font-semibold rounded-lg"
+                    style={{
+                      border: "1px solid rgba(34,211,138,0.3)",
+                      background: "rgba(34,211,138,0.07)",
+                      color: "#22d38a",
+                    }}
+                  >
+                    BUY
+                  </button>
                   <button
-                    onClick={() => { setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }}
-                    className="px-2 py-0.5 text-[8px] font-semibold rounded-md" style={{ border: "1px solid rgba(255,77,106,0.3)", background: "rgba(255,77,106,0.07)", color: "#ff4d6a" }}
-                  >SELL</button>
+                    onClick={() => {
+                      setSelectedStock(item);
+                      setTradeAction("SELL");
+                      setIsModalOpen(true);
+                    }}
+                    className="flex-1 py-1.5 text-xs font-semibold rounded-lg"
+                    style={{
+                      border: "1px solid rgba(255,77,106,0.3)",
+                      background: "rgba(255,77,106,0.07)",
+                      color: "#ff4d6a",
+                    }}
+                  >
+                    SELL
+                  </button>
                   <button
                     onClick={() => handleAddToWatchlist(item)}
                     disabled={addingId === item.id}
-                    className="px-2 py-0.5 text-[8px] font-semibold rounded-md disabled:opacity-50" style={{ background: "rgba(255,255,255,0.05)", color: "#888", border: "1px solid rgba(255,255,255,0.08)" }}
-                  >{addingId === item.id ? "..." : "+ Watch"}</button>
+                    className="px-3 py-1.5 text-xs font-semibold rounded-lg disabled:opacity-50"
+                    style={{
+                      background: "rgba(255,255,255,0.05)",
+                      color: "#888",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    {addingId === item.id ? "..." : "+ Watch"}
+                  </button>
                 </div>
               </div>
 
-              {/* ── Desktop Row ── */}
+              {/* Desktop Row */}
               <div className="hidden sm:grid relative group grid-cols-3 px-4 py-3 hover:bg-[var(--color-row-hover)] transition text-textPrimary">
                 <div>
                   <p className="text-sm font-medium">{item.name}</p>
-                  <p className="text-xs text-textMuted">{exchLabel} • {item.symbol}</p>
+                  <p className="text-xs text-textMuted">
+                    {exchLabel} • {item.symbol}
+                  </p>
                 </div>
 
                 <div className="text-sm text-center font-mono">
@@ -232,13 +300,37 @@ useMarketFeed({
                 </div>
 
                 <div className={`text-sm text-center ${isUp ? "text-green-400" : "text-red-400"}`}>
-                  {live ? `${isUp ? "+" : ""}${formatNumber((live.LastRate - live.PClose).toFixed(2))} (${formatNumber(live.ChgPcnt.toFixed(2))}%)` : "—"}
+                  {live
+                    ? `${isUp ? "+" : ""}${formatNumber((live.LastRate - live.PClose).toFixed(2))} (${formatNumber(live.ChgPcnt.toFixed(2))}%)`
+                    : "—"}
                 </div>
 
                 <div className="absolute inset-0 flex items-center justify-end pr-4 gap-2 opacity-0 group-hover:opacity-100 transition">
-                  <button onClick={() => { setSelectedStock(item); setTradeAction("BUY"); setIsModalOpen(true); }} className="px-2 py-1 text-xs bg-[#22C55E] text-black rounded">Buy</button>
-                  <button onClick={() => { setSelectedStock(item); setTradeAction("SELL"); setIsModalOpen(true); }} className="px-2 py-1 text-xs bg-[#FF4D4F] text-white rounded">Sell</button>
-                  <button onClick={() => handleAddToWatchlist(item)} disabled={addingId === item.id} className="px-2 py-1 text-xs bg-cardBg border border-borderColor text-textMuted rounded disabled:opacity-50">
+                  <button
+                    onClick={() => {
+                      setSelectedStock(item);
+                      setTradeAction("BUY");
+                      setIsModalOpen(true);
+                    }}
+                    className="px-2 py-1 text-xs bg-[#22C55E] text-black rounded"
+                  >
+                    Buy
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedStock(item);
+                      setTradeAction("SELL");
+                      setIsModalOpen(true);
+                    }}
+                    className="px-2 py-1 text-xs bg-[#FF4D4F] text-white rounded"
+                  >
+                    Sell
+                  </button>
+                  <button
+                    onClick={() => handleAddToWatchlist(item)}
+                    disabled={addingId === item.id}
+                    className="px-2 py-1 text-xs bg-cardBg border border-borderColor text-textMuted rounded disabled:opacity-50"
+                  >
                     {addingId === item.id ? "Adding..." : "+ Add to Watchlist"}
                   </button>
                 </div>

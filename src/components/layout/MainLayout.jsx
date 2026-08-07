@@ -33,7 +33,7 @@ function MainLayout( {triggerWatchlistUpdate, setTriggerWatchlistUpdate, trigger
           />
 
           {/* Scrollable page content */}
-          <div className="relative h-full overflow-y-auto p-2 sm:p-6 pb-16 md:pb-6">
+          <div className="relative overflow-scroll max-h-[81vh] p-2 pb-16 sm:h-full sm:max-h-none sm:overflow-y-auto sm:p-6 md:pb-6">
             <Outlet />
           </div>
 

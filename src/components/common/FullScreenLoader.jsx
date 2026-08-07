@@ -1,5 +1,4 @@
 import { motion, AnimatePresence } from "framer-motion";
-// import loaderVideo from "./assets/videos/loooginLoader.mp4"; // adjust path if needed
 import loaderVideo from "../../assets/videos/loginLoader.mp4";
 
 function FullScreenLoader({ isVisible }) {
@@ -14,9 +13,10 @@ function FullScreenLoader({ isVisible }) {
             duration: 0.7,
             ease: [0.65, 0, 0.35, 1],
           }}
-          className="fixed inset-0 z-[999] overflow-hidden"
+          className="fixed inset-0 z-[999] flex items-center justify-center overflow-hidden"
+          style={{ backgroundColor: "#0E2D34" }}
         >
-          {/* 🎥 Background Video */}
+          {/* Blurred full-screen background video */}
           <video
             src={loaderVideo}
             autoPlay
@@ -25,16 +25,21 @@ function FullScreenLoader({ isVisible }) {
             playsInline
             preload="auto"
             onLoadedData={(e) => e.currentTarget.play()}
-            className="absolute inset-0 w-full h-auto min-w-full object-contain sm:h-full sm:object-cover"
+            className="absolute inset-0 h-full w-full object-cover scale-125 blur-md opacity-70"
+            aria-hidden
           />
 
-          {/* 🌑 Dark Overlay */}
-          {/* <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" /> */}
-
-          {/* ✨ Optional Center Content (keep empty for clean look) */}
-          <div className="relative z-10 flex items-center justify-center h-full">
-            {/* Future: logo / animation */}
-          </div>
+          {/* Sharp foreground video */}
+          <video
+            src={loaderVideo}
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            onLoadedData={(e) => e.currentTarget.play()}
+            className="relative z-10 w-full h-auto object-contain scale-150"
+          />
         </motion.div>
       )}
     </AnimatePresence>

@@ -152,6 +152,7 @@ const TradeModal = ({
         symbol,
         name,
         LTP: price,
+        email: localStorage.getItem("email") || "",
         ...(isMCX ? { lots: quantity, multiplier } : { Quantity: quantity }),
       };
 
