@@ -6,6 +6,7 @@ import Home from "./pages/Home/Home";
 import Login from "./pages/Login/Login";
 import Signup from "./pages/Signup/Signup";
 import Documentation from "./pages/Documentation/Documentation";
+import Logos from "./pages/Logos/Logos";
 
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Watchlist from "./pages/Watchlist/Watchlist";
@@ -67,6 +68,7 @@ function App() {
         />
         <Route path="/signup" element={<Signup />} />
         <Route path="/documentation" element={<Documentation />} />
+        <Route path="/logos" element={<Logos />} />
 
         {/* App Layout (Protected) */}
         <Route element={<PrivateRoute />}>
